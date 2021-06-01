@@ -2,7 +2,7 @@ library(tidyverse)
 library(here)
 
 coords <- read_csv(here("data","09_coords.csv"), col_types = cols(plot=col_character(),
-                                                           bdffp_reserve_no=col_character()
+                                                    bdffp_reserve_no=col_character()
 ))
 
 
@@ -38,7 +38,7 @@ PortoAlegre_1ha <-ha_1frag %>%
 PortoAlegre_1ha_layout <-  # assuming bottom-left is origin
   expand_grid(
     tibble(row = LETTERS[1:5],
-           plot_x = 5:1), # swapped x and y here since row and column variables are swapped. 
+           plot_x = 0:4), # swapped x and y here since row and column variables are swapped. 
     tibble(column = 1:10,
            plot_y = 0:9)
   ) %>%
@@ -63,6 +63,7 @@ dimona_1_layout <- # Assumes bottom-left origin
   ) %>%
   add_column(plot = "2107")
 dimona_1_layout
+left_join(dimona_1ha_1,dimona_1_layout)
 
 dimona_1ha_2 <- #dimona 2nd 1-ha plot 
   ha2 %>%
@@ -79,4 +80,33 @@ dimona_2_layout <- # Assumes top-right origin
   add_column(plot = "2108")
 dimona_2_layout
 
-# Colosso 1-ha
+left_join(dimona_2_layout,dimona)
+
+# Writing function to repeat filtering task ----------------------------------
+
+ha_data_filter <- function(data,ranch_name,habitat_type) {
+  data %>%
+    filter(ranch == ranch_name & habitat == habitat_type) %>%
+    select(ranch, plot, habitat, ha_id_number, year, ht, row, column)
+}
+
+# test function -----------------------------------------------------------
+
+ha_data_filter(ha2,"PortoAlegre","1-ha")
+ha_data_filter(ha2,"Esteio-Colosso","CF")
+
+# 1-ha Esteio-Colosso Fragment ------------------------------------------
+
+Esteio_Colosso_1ha <- ha_data_filter(ha2,"Esteio-Colosso","1-ha")
+unique(Esteio_Colosso_1ha$plot)
+
+# assume bottom-right point of origin
+EST_COL_1ha_layout <-
+  expand_grid(
+    tibble(row = LETTERS[1:5], 
+           plot_x = 0:4), # swapped position of plot_x and plot_y to reflect data and diagrams
+    tibble(column = 1:10,
+           plot_y = 0:9)
+  ) %>%
+    add_column(plot="5751")
+left_join(Esteio_Colosso_1ha,EST_COL_1ha_layout)
