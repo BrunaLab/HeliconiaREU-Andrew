@@ -116,7 +116,7 @@ EST_COL_1ha_join<-left_join(Esteio_Colosso_1ha,EST_COL_1ha_layout)
 
 
 
-# test to figure out if id in excel sheet is the same as ha_id_number --
+# test to figure out if id in excel sheet is the same as ha_id_number -------
 
 ha2 %>%
   filter(plot=="2107") %>%
@@ -155,4 +155,8 @@ mutate(ha4,x_final = plot_x + x) %>%
 mutate(ha4,y_final = plot_y + y) %>%
   view()
 
+?write_rds
+write_rds(one_ha_coord_final,here("data","one_ha_coords_updated.rds"))
 
+
+read_rds(here("data","one_ha_coord_final.rds"))
