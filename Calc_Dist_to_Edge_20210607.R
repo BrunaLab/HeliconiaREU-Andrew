@@ -1,6 +1,14 @@
 # Calculating linear distance to nearest edge for each 1-ha plot ------------
-rm(list=ls())
-install.packages("Rfast") # Need this package for the nth() function
+# rm(list=ls())
+
+
+# install.packages("Rfast") # Need this package for the nth() function
+# Generally not good practice to install.packages() in a script.  Here's another
+# way to do this that is "friendlier"
+if(!"Rfast" %in% installed.packages()) {
+  install.packages("Rfast")
+}
+
 library(Rfast)
 library(tidyverse)
 library(here)
@@ -61,19 +69,22 @@ if(abs_value_Colosso(EST_simple$x[i]) > EST_simple$y[i]) {
   }
 }  
 warnings() 
-EST
+# EST #not found
 EST_x <- EST_simple$x
 EST_y <- EST_simple$y
 Edge1_Orientation <-NULL
 Edge2_Orientation <- NULL
 distance_to_nearest_edge <- NULL
 distance_to_next_nearest_edge <- NULL
-ha_id_number <- EST_x_over50$ha_id_number
+
 
 # split Colosso data into three cases based on domain values of x 
 EST_x_under50 <- EST_simple[EST_simple$x < 50,]
 EST_x_over50 <- EST_simple[EST_simple$x >50,]
 EST_x_at50 <- EST_simple[EST_simple$x == 50,] # 0 observations
+
+#moved from above before EST_x_over50 was created
+ha_id_number <- EST_x_over50$ha_id_number
 
 for(i in 1:72) {
   if (EST_x_over50$y[i] > abs_value_Colosso(EST_x_over50$x[i])){
@@ -122,7 +133,8 @@ distance_to_next_nearest_edge <- NULL
 for(i in 1:192){
 distances$distance_to_nearest_edge[i] <-apply(distances[i,2:5],1,FUN=min)
 distance.temp <- as.matrix(distances[i,2:5]) # convert to matrix so nth() can work
-distances$distance_to_next_nearest_edge[i] <- nth(distance.temp,2,descending=F)
+distances$distance_to_next_nearest_edge[i] <- 
+  Rfast::nth(distance.temp,2,descending=F) #there is also an nth() in dplyr.  This is one way to specify which one to use.
 }
 warnings()
 Colosso_1ha <- left_join(EST_simple,distances)
@@ -161,7 +173,7 @@ distance_to_next_nearest_edge <- NULL
 for(i in 1:210){
   distances_Alegre$distance_to_nearest_edge[i] <-apply(distances_Alegre[i,2:5],1,FUN=min)
   distance.temp <- as.matrix(distances_Alegre[i,2:5])
-  distances_Alegre$distance_to_next_nearest_edge[i] <- nth(distance.temp,2,descending=F)
+  distances_Alegre$distance_to_next_nearest_edge[i] <- Rfast::nth(distance.temp,2,descending=F)
 }
 
 Porto_Alegre_1ha_join <- left_join(Porto_Alegre_simple,distances_Alegre)
@@ -199,7 +211,7 @@ for (i in 1:177) {
   distances_Dimona_2107$distance_to_nearest_edge[i] <- apply(distances_Dimona_2107
                                                              [i,2:5],1,FUN=min)
   distance.temp <- as.matrix(distances_Dimona_2107[i,2:5])
-  distances_Dimona_2107$distance_to_next_nearest_edge[i] <-nth(distance.temp,2,descending=F)
+  distances_Dimona_2107$distance_to_next_nearest_edge[i] <-Rfast::nth(distance.temp,2,descending=F)
 }
 
 Dimona_2107_1ha_join <- left_join(Dimona_2107_1ha_simple,distances_Dimona_2107)
