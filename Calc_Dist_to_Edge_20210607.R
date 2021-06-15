@@ -1,17 +1,35 @@
-# Calculating linear distance to nearest edge for each 1-ha plot ------------
-rm(list=ls())
+
+# Overview ------------------------------------------------------------------
+
+# Andrew Mercadante
+# REU Project Summer 2021
+# 
+# This code measures the linear distance of a point in a 1-ha fragment
+# (e.g., the xy coordinates of a plant) to the nearest edge of that fragment.
+
+
+
+# loading packages --------------------------------------------------------
+
 install.packages("Rfast") # Need this package for the nth() function
 library(Rfast)
 library(tidyverse)
 library(here)
 
+
+# loading datasets --------------------------------------------------------
+
 data <- read_rds(here("data","one_ha_coords_updated.rds")) # reading in .rds file
 
+
+# data organization -------------------------------------------------------
+
+# create a dataframe for each fragment 
+
+# COLOSSO 1-HA
 EST_1_ha <- data %>%
   filter(habitat == "1-ha" & ranch == "Esteio-Colosso") %>% #filtering data
   filter(!is.na(x_final) & !is.na(y_final))
-
-
 
 EST_simple <- EST_1_ha %>% 
   group_by(ha_id_number,row,column) %>%
@@ -21,13 +39,50 @@ EST_simple <- EST_1_ha %>%
 str(EST_simple)
 EST_simple$column <- as.character(EST_simple$column)
 str(EST_simple)
-
 length(EST_simple$x) # 192 length, index for for loop
+
+# DIMONA 1-HA
+Dimona_2107_1ha <- data %>%
+  filter(bdffp_reserve_no == "2107" & habitat == "1-ha") %>%
+  filter(!is.na(x_final) & !is.na(y_final))
+
+Dimona_2107_1ha_simple <- Dimona_2107_1ha %>%
+  group_by(ha_id_number,row,column) %>%
+  summarize(x=unique(x_final), y=unique(y_final))
+
+# PORTO ALEGRE 1-HA
+Porto_Alegre_1ha <- data %>%
+  filter(habitat == "1-ha" & ranch == "PortoAlegre") %>%
+  filter(!is.na(x_final) & !is.na(y_final))
+
+Porto_Alegre_simple <- Porto_Alegre_1ha %>%
+  group_by(ha_id_number,row,column) %>%
+  summarize(x= unique(x_final),y=unique(y_final)) 
+
+# A generic way to check if they have the same number of plants is 
+# to ask TRUE/FALSE if the number of unique id's in each df are equal
+# that way you don't have to know the exact number (in this case 210).
+# be sure to use the == (double equals).
+
+length(unique(Porto_Alegre_1ha$ha_id_number)) == 
+  length(unique(Porto_Alegre_simple$ha_id_number))
+
+
+length(unique(Dimona_2107_1ha$ha_id_number)) == 
+  length(unique(Dimona_2107_1ha_simple$ha_id_number))
+
+length(unique(EST_1_ha$ha_id_number)) == 
+  length(unique(EST_simple$ha_id_number))
+
+
+# calculations of distance to edge  ---------------------------------------
+
+# Better description needed of what this needs.
 
 # list of equidistant points for Colosso, can define each edge orientation by what 
 # is below the curve, to the left, to the right, and above and below the curve.
 
- test_var <-seq(20,80,1)
+test_var <-seq(20,80,1)
 y <- seq(0,30,1)
 y2 <- sort(y,decreasing=TRUE)
 y2 <- y2[-1]
@@ -129,16 +184,6 @@ Colosso_1ha <- left_join(EST_simple,distances)
 
 # Porto Alegre 1-ha fragment -----------------------------------------------
 
-Porto_Alegre_1ha <- data %>%
-  filter(habitat == "1-ha" & ranch == "PortoAlegre") %>%
-  filter(!is.na(x_final) & !is.na(y_final))
-
-Porto_Alegre_simple <- Porto_Alegre_1ha %>%
-  group_by(ha_id_number,row,column) %>%
-  summarize(x= unique(x_final),y=unique(y_final)) # 210
-
-
-length(unique(Porto_Alegre_1ha$ha_id_number)) # 210 checks out, no missing plants
 
 distance_to_N_edge <- NULL
 distance_to_E_edge <- NULL
@@ -168,13 +213,6 @@ Porto_Alegre_1ha_join <- left_join(Porto_Alegre_simple,distances_Alegre)
 
 
 # Dimona 1-ha fragment 2107 ------------------------------------------
-Dimona_2107_1ha <- data %>%
-  filter(bdffp_reserve_no == "2107" & habitat == "1-ha") %>%
-  filter(!is.na(x_final) & !is.na(y_final))
-
-Dimona_2107_1ha_simple <- Dimona_2107_1ha %>%
-  group_by(ha_id_number,row,column) %>%
-  summarize(x=unique(x_final), y=unique(y_final))
 
 distance_to_N_edge <- NULL
 distance_to_E_edge <- NULL
