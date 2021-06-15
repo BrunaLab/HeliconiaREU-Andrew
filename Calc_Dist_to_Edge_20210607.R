@@ -35,6 +35,12 @@ EST_simple <- EST_1_ha %>%
   group_by(ha_id_number,row,column) %>%
   summarize(x=unique(x_final), y= unique(y_final))
   
+
+str(EST_simple)
+EST_simple$column <- as.character(EST_simple$column)
+str(EST_simple)
+length(EST_simple$x) # 192 length, index for for loop
+
 # DIMONA 1-HA
 Dimona_2107_1ha <- data %>%
   filter(bdffp_reserve_no == "2107" & habitat == "1-ha") %>%
@@ -51,25 +57,32 @@ Porto_Alegre_1ha <- data %>%
 
 Porto_Alegre_simple <- Porto_Alegre_1ha %>%
   group_by(ha_id_number,row,column) %>%
-  summarize(x= unique(x_final),y=unique(y_final)) # 210
+  summarize(x= unique(x_final),y=unique(y_final)) 
+
+# A generic way to check if they have the same number of plants is 
+# to ask TRUE/FALSE if the number of unique id's in each df are equal
+# that way you don't have to know the exact number (in this case 210).
+# be sure to use the == (double equals).
+
+length(unique(Porto_Alegre_1ha$ha_id_number)) == 
+  length(unique(Porto_Alegre_simple$ha_id_number))
 
 
-length(unique(Porto_Alegre_1ha$ha_id_number)) # 210 checks out, no missing plants
+length(unique(Dimona_2107_1ha$ha_id_number)) == 
+  length(unique(Dimona_2107_1ha_simple$ha_id_number))
+
+length(unique(EST_1_ha$ha_id_number)) == 
+  length(unique(EST_simple$ha_id_number))
 
 
 # calculations of distance to edge  ---------------------------------------
 
-
-str(EST_simple)
-EST_simple$column <- as.character(EST_simple$column)
-str(EST_simple)
-
-length(EST_simple$x) # 192 length, index for for loop
+# Better description needed of what this needs.
 
 # list of equidistant points for Colosso, can define each edge orientation by what 
 # is below the curve, to the left, to the right, and above and below the curve.
 
- test_var <-seq(20,80,1)
+test_var <-seq(20,80,1)
 y <- seq(0,30,1)
 y2 <- sort(y,decreasing=TRUE)
 y2 <- y2[-1]
