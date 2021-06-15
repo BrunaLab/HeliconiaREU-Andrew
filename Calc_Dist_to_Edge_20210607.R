@@ -20,7 +20,7 @@ EST_1_ha <- data %>%
   filter(!is.na(x_final) & !is.na(y_final))
 
 
-
+# Simplify to one location per plant, since plants don't move
 EST_simple <- EST_1_ha %>% 
   group_by(ha_id_number,row,column) %>%
   summarize(x=unique(x_final), y= unique(y_final))
@@ -35,7 +35,7 @@ length(EST_simple$x) # 192 length, index for for loop
 # list of equidistant points for Colosso, can define each edge orientation by what 
 # is below the curve, to the left, to the right, and above and below the curve.
 
- test_var <-seq(20,80,1)
+test_var <-seq(20,80,1)
 y <- seq(0,30,1)
 y2 <- sort(y,decreasing=TRUE)
 y2 <- y2[-1]
@@ -49,6 +49,7 @@ plot(test_var,y_final,lty=1,type="b")
 #to then determine what edge they are closest to and what method to use to find linear distance
 
 # its an absolute value function of the form: y = -|x-50|+30
+# Why 30?  Is this the plot that isn't right up against the edge?
 
 abs_value_Colosso <- function(x_value) {
   y = -abs(x_value-50)+30
@@ -59,7 +60,8 @@ abs_value_Colosso(20)
 
 
 # test a conditional with this function
-for (i in 1:192) {
+
+for (i in 1:length(EST_simple$x)) {
 if(abs_value_Colosso(EST_simple$x[i]) > EST_simple$y[i]) {
   print("Yes")
 
@@ -83,10 +85,10 @@ EST_x_under50 <- EST_simple[EST_simple$x < 50,]
 EST_x_over50 <- EST_simple[EST_simple$x >50,]
 EST_x_at50 <- EST_simple[EST_simple$x == 50,] # 0 observations
 
-#moved from above before EST_x_over50 was created
+# ERS: moved from above before EST_x_over50 was created, but not sure if important.
 ha_id_number <- EST_x_over50$ha_id_number
 
-for(i in 1:72) {
+for(i in 1:72) { #replace 72 with length() or nrow()
   if (EST_x_over50$y[i] > abs_value_Colosso(EST_x_over50$x[i])){
     distance_to_nearest_edge[i] <- 101-EST_x_over50$x[i]
     Edge1_Orientation[i] <- "West"
