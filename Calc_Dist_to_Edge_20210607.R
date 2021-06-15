@@ -180,6 +180,7 @@ Colosso_1ha <- left_join(EST_simple,distances) # join dataframes
 distance_to_nearest_edge <- NULL
 distance_to_next_nearest_edge <- NULL
 
+# This is awesome!  I could not think of how to get next-nearest distance.  Sorting and using the nth() function is a perfect solution!
 for(i in 1:192){
   distances$distance_to_nearest_edge[i] <-apply(distances[i,2:5],1,FUN=min)
   distance.temp <- as.matrix(distances[i,2:5]) # convert to matrix so nth() can work
@@ -207,14 +208,29 @@ ha_id_number <- Porto_Alegre_simple$ha_id_number
 distances_Alegre <- data.frame(ha_id_number,distance_to_N_edge,distance_to_E_edge,
                                           distance_to_W_edge,distance_to_S_edge)
 
+## Tidyverse version (I think):
+# distances_Alegre <-
+#   Porto_Alegre_simple %>% 
+#   mutate(distance_to_N_edge = 50 - y,
+#          distance_to_E_edge = x,
+#          distance_to_W_edge = 100 - x,
+#          distance_to_S_edge = y + 50)
+
 distance_to_nearest_edge <- NULL
 distance_to_next_nearest_edge <- NULL
 
 for(i in 1:210){
-  distances_Alegre$distance_to_nearest_edge[i] <-apply(distances_Alegre[i,2:5],1,FUN=min)
+  distances_Alegre$distance_to_nearest_edge[i] <- apply(distances_Alegre[i,2:5],1,FUN=min)
   distance.temp <- as.matrix(distances_Alegre[i,2:5])
   distances_Alegre$distance_to_next_nearest_edge[i] <- Rfast::nth(distance.temp,2,descending=F)
 }
+
+## Tidyverse version (I think):
+# distances_Alegre %>% 
+#   rowwise() %>% 
+#   mutate(nearest_dist = min(c_across(ends_with("_edge"))),
+#          next_nearest_dist = nth(sort(c_across(ends_with("_edge"))), 2))
+# The tidyverse version is maybe a bit less readable for this one
 
 Porto_Alegre_1ha_join <- left_join(Porto_Alegre_simple,distances_Alegre)
 
