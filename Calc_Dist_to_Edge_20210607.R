@@ -162,12 +162,11 @@ distance_to_S_edge <- NULL
 distance_to_E_edge <- NULL
 distance_to_W_edge <- NULL
 
-for (i in 1:192) {
-  distance_to_N_edge[i] <- EST_simple$y[i] + 20
-  distance_to_E_edge[i] <- EST_simple$x[i] 
-  distance_to_W_edge[i] <-100-EST_simple$x[i]
-  distance_to_S_edge[i] <- EST_simple$y[i] + 50
-}
+#doesn't need to be a for-loop.  Addition is vectorized.
+distance_to_N_edge <- EST_simple$y + 20
+distance_to_E_edge <- EST_simple$x 
+distance_to_W_edge <- 100 - EST_simple$x
+distance_to_S_edge <- EST_simple$y + 50
 
 
 ha_id_number <- EST_simple$ha_id_number
@@ -182,10 +181,10 @@ distance_to_nearest_edge <- NULL
 distance_to_next_nearest_edge <- NULL
 
 for(i in 1:192){
-distances$distance_to_nearest_edge[i] <-apply(distances[i,2:5],1,FUN=min)
-distance.temp <- as.matrix(distances[i,2:5]) # convert to matrix so nth() can work
-distances$distance_to_next_nearest_edge[i] <- 
-  Rfast::nth(distance.temp,2,descending=F) #there is also an nth() in dplyr.  This is one way to specify which one to use.
+  distances$distance_to_nearest_edge[i] <-apply(distances[i,2:5],1,FUN=min)
+  distance.temp <- as.matrix(distances[i,2:5]) # convert to matrix so nth() can work
+  distances$distance_to_next_nearest_edge[i] <- 
+    Rfast::nth(distance.temp,2,descending=F) #there is also an nth() in dplyr.  This is one way to specify which one to use.
 }
 warnings()
 Colosso_1ha <- left_join(EST_simple,distances)
@@ -198,12 +197,12 @@ distance_to_E_edge <- NULL
 distance_to_W_edge <- NULL
 distance_to_S_edge <- NULL
 
-for ( i in 1:210) {
-  distance_to_N_edge[i] <- 50-Porto_Alegre_simple$y[i]
-  distance_to_E_edge[i] <- Porto_Alegre_simple$x[i]
-  distance_to_W_edge[i] <- 100- Porto_Alegre_simple$x[i]
-  distance_to_S_edge[i] <- Porto_Alegre_simple$y[i] + 50
-}
+distance_to_N_edge <- 50-Porto_Alegre_simple$y
+distance_to_E_edge <- Porto_Alegre_simple$x
+distance_to_W_edge <- 100- Porto_Alegre_simple$x
+distance_to_S_edge <- Porto_Alegre_simple$y + 50
+
+
 ha_id_number <- Porto_Alegre_simple$ha_id_number
 distances_Alegre <- data.frame(ha_id_number,distance_to_N_edge,distance_to_E_edge,
                                           distance_to_W_edge,distance_to_S_edge)
@@ -230,12 +229,11 @@ distance_to_S_edge <- NULL
 distance_to_nearest_edge <- NULL
 distance_to_next_nearest_edge <- NULL
 
-for (i in 1:177) {
-  distance_to_N_edge[i] <- Dimona_2107_1ha_simple$y[i] + 50
-  distance_to_E_edge[i] <- Dimona_2107_1ha_simple$x[i]
-  distance_to_W_edge[i] <- 100-Dimona_2107_1ha_simple$x[i]
-  distance_to_S_edge[i] <- 50-Dimona_2107_1ha_simple$y[i] 
-}
+distance_to_N_edge <- Dimona_2107_1ha_simple$y + 50
+distance_to_E_edge <- Dimona_2107_1ha_simple$x
+distance_to_W_edge <- 100-Dimona_2107_1ha_simple$x
+distance_to_S_edge <- 50-Dimona_2107_1ha_simple$y
+
 
 ha_id_number <- Dimona_2107_1ha_simple$ha_id_number
 distances_Dimona_2107 <- data.frame(ha_id_number,distance_to_N_edge,distance_to_E_edge,
