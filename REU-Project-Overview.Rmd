@@ -1,0 +1,22 @@
+---
+title: "REU_Project_Overview"
+output: html_document
+author: "Andrew Mercadante"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+                    Preliminary thoughts on introduction/hypotheses to test
+                    
+Due to widespread anthropogenic activities, landscapes worldwide have become more fragmented and spatially complex (). Habitat fragmentation imposes a new dynamic onto landscapes, where ecological parameters at the community and population level can be affected by the size of habitat patches, the structure of surrounding matrix, and the spatial complexity of the patch (i.e., the number of edges). Edge effects (changes in a response variable due to presence of an edge) have become a topic of interest for ecologists and conservationists that explore how fragmentation impacts species distribution, species interactions like pollination, dispersal, and predation. Quantifying edge effects on a patch and landscape-level permits ecologists to better understand how fragmented landscapes will affect different species, while providing conservationists with well-informed models to predict species-specific and community responses to ongoing fragmentation. For example, as a landscape becomes progressively more fragmented, patches typically become smaller, which means edge effects will penetrate further into these patches, impacting the entire area if the patch is small enough. Some species may exhibit edge avoidance or can be adversely affected by environmental stressors induced by edge-associated microclimates().
+
+Using data obtained on populations of Heliconia acuminata located within the experimentally fragmented rainforest of the BDFFP, we will first quantify the depth and magnitude of the edge effects for 1-ha and 10-ha fragments using vocabulary consistent with the conceptual framework outlined by Porensky and Young 2013. This population data provides us with a unique opportunity to determine the demographic consequences of a population that is subjected to edge interaction. Specifically, if edge effects are detected, then the annual growth rates of H. acuminata, abundance of H. acuminata, and survivorship of H. acuminata will be significantly lower in areas of fragments where a strengthening edge effect is observed because of edge interaction. Another question to answer would be if plants experiencing edge effects demonstrate greater year-to-year variance in their measured response variables. Quantifying variance on important demographic parameters could be relevant to smaller populations, as increased variance in vital rates of a small population can dramatically increase extinction risk ().  
+
