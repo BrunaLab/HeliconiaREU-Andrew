@@ -157,6 +157,8 @@ for(i in 1:72) { #replace 72 with length() or nrow()
 # ----------------------------- New Method, exhaustive --------------
 
 EST_simple
+
+# ERS: you might consider shorter variable names.  Maybe `dist_to_N` or even just `dist_N`?
 distance_to_N_edge <- NULL
 distance_to_S_edge <- NULL
 distance_to_E_edge <- NULL
@@ -177,7 +179,7 @@ Colosso_1ha <- left_join(EST_simple,distances) # join dataframes
 #distances$dist_to_nearest_edge <- apply(distances,1,FUN=min) this is how to get first edge
 
 # How to get second closest edge?
-distance_to_nearest_edge <- NULL
+distance_to_nearest_edge <- NULL #ERS or maybe just `dist_nearest` and `dist_next`?
 distance_to_next_nearest_edge <- NULL
 
 # This is awesome!  I could not think of how to get next-nearest distance.  Sorting and using the nth() function is a perfect solution!
