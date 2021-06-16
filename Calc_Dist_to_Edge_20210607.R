@@ -1,4 +1,3 @@
-
 # Overview ------------------------------------------------------------------
 
 # Andrew Mercadante
@@ -7,11 +6,11 @@
 # This code measures the linear distance of a point in a 1-ha fragment
 # (e.g., the xy coordinates of a plant) to the nearest edge of that fragment.
 
-
-
 # loading packages --------------------------------------------------------
 
-install.packages("Rfast") # Need this package for the nth() function
+if(!"Rfast" %in% installed.packages()) {
+  install.packages("Rfast")
+} # Need this package for the nth() function
 library(Rfast)
 library(tidyverse)
 library(here)
@@ -30,6 +29,9 @@ data <- read_rds(here("data","one_ha_coords_updated.rds")) # reading in .rds fil
 EST_1_ha <- data %>%
   filter(habitat == "1-ha" & ranch == "Esteio-Colosso") %>% #filtering data
   filter(!is.na(x_final) & !is.na(y_final))
+
+
+# Simplify to one location per plant, since plants don't move
 
 EST_simple <- EST_1_ha %>% 
   group_by(ha_id_number,row,column) %>%
@@ -74,7 +76,6 @@ length(unique(Dimona_2107_1ha$ha_id_number)) ==
 length(unique(EST_1_ha$ha_id_number)) == 
   length(unique(EST_simple$ha_id_number))
 
-
 # ----------------------------- New Method, exhaustive --------------
 
 EST_simple
@@ -82,13 +83,14 @@ distance_to_N_edge <- NULL # set up variables to store distances to all edges
 distance_to_S_edge <- NULL
 distance_to_E_edge <- NULL
 distance_to_W_edge <- NULL
+# ERS: you might consider shorter variable names.  Maybe `dist_to_N` or even just `dist_N`?
 
-for (i in 1:length(EST_simple$x)) { # for loop that calculates linear distance to each edge
-  distance_to_N_edge[i] <- EST_simple$y[i] + 20 
-  distance_to_E_edge[i] <- EST_simple$x[i] 
-  distance_to_W_edge[i] <-100-EST_simple$x[i]
-  distance_to_S_edge[i] <- EST_simple$y[i] + 50
-}
+#doesn't need to be a for-loop.  Addition is vectorized.
+distance_to_N_edge <- EST_simple$y + 20
+distance_to_E_edge <- EST_simple$x 
+distance_to_W_edge <- 100 - EST_simple$x
+distance_to_S_edge <- EST_simple$y + 50
+
 
 
 ha_id_number <- EST_simple$ha_id_number # need to make this a variable so I can add it  
@@ -102,9 +104,11 @@ Colosso_1ha <- left_join(EST_simple,distances) # join dataframes
 #distances$dist_to_nearest_edge <- apply(distances,1,FUN=min) this is how to get first edge
 
 # How to get second closest edge?
-distance_to_nearest_edge <- NULL # set up variables to store the two lowest values from the 4 distances
-distance_to_next_nearest_edge <- NULL
 
+distance_to_nearest_edge <- NULL # set up variables to store the two lowest values from the 4 distances
+distance_to_next_nearest_edge <- NULL #ERS or maybe just `dist_nearest` and `dist_next`?
+
+# This is awesome!  I could not think of how to get next-nearest distance.  Sorting and using the nth() function is a perfect solution!
 for(i in 1:length(EST_simple$x)){
 distances$distance_to_nearest_edge[i] <-apply(distances[i,2:5],1,FUN=min) # apply min() to 2nd-5th column of ith row
 distance.temp <- as.matrix(distances[i,2:5]) # convert to matrix so nth() can work
@@ -122,26 +126,41 @@ distance_to_E_edge <- NULL
 distance_to_W_edge <- NULL
 distance_to_S_edge <- NULL
 
-for ( i in 1:length(Porto_Alegre_simple$x)) { # for loop for calculating distance to edge
-  distance_to_N_edge[i] <- 50-Porto_Alegre_simple$y[i]
-  distance_to_E_edge[i] <- Porto_Alegre_simple$x[i]
-  distance_to_W_edge[i] <- 100- Porto_Alegre_simple$x[i]
-  distance_to_S_edge[i] <- Porto_Alegre_simple$y[i] + 50
-}
+distance_to_N_edge <- 50-Porto_Alegre_simple$y
+distance_to_E_edge <- Porto_Alegre_simple$x
+distance_to_W_edge <- 100- Porto_Alegre_simple$x
+distance_to_S_edge <- Porto_Alegre_simple$y + 50
+
 ha_id_number <- Porto_Alegre_simple$ha_id_number
 distances_Alegre <- data.frame(ha_id_number,distance_to_N_edge,distance_to_E_edge, # form df of distances w/ ha_id_number
                                           distance_to_W_edge,distance_to_S_edge)
 
-distance_to_nearest_edge <- NULL # initialize variables to store two lowest distance values
+## Tidyverse version (I think):
+# distances_Alegre <-
+#   Porto_Alegre_simple %>% 
+#   mutate(distance_to_N_edge = 50 - y,
+#          distance_to_E_edge = x,
+#          distance_to_W_edge = 100 - x,
+#          distance_to_S_edge = y + 50)
+
+distance_to_nearest_edge <- NULL
 distance_to_next_nearest_edge <- NULL
 
-for(i in 1:length(Porto_Alegre_simple$x)){
-  distances_Alegre$distance_to_nearest_edge[i] <-apply(distances_Alegre[i,2:5],1,FUN=min) # apply min() to 2nd-5th columns of ith row
-  distance.temp <- as.matrix(distances_Alegre[i,2:5]) # store as matrix to allow nth() to work
+for(i in 1:210){
+  distances_Alegre$distance_to_nearest_edge[i] <- apply(distances_Alegre[i,2:5],1,FUN=min)
+  distance.temp <- as.matrix(distances_Alegre[i,2:5])
   distances_Alegre$distance_to_next_nearest_edge[i] <- Rfast::nth(distance.temp,2,descending=F)
 }
 
-Porto_Alegre_1ha_join <- left_join(Porto_Alegre_simple,distances_Alegre) # join two dfs
+## Tidyverse version (I think):
+# distances_Alegre %>% 
+#   rowwise() %>% 
+#   mutate(nearest_dist = min(c_across(ends_with("_edge"))),
+#          next_nearest_dist = nth(sort(c_across(ends_with("_edge"))), 2))
+# The tidyverse version is maybe a bit less readable for this one
+
+Porto_Alegre_1ha_join <- left_join(Porto_Alegre_simple,distances_Alegre)
+
 
 
 # Dimona 1-ha fragment 2107 ------------------------------------------
@@ -154,12 +173,11 @@ distance_to_S_edge <- NULL
 distance_to_nearest_edge <- NULL # same as above
 distance_to_next_nearest_edge <- NULL
 
-for (i in 1:length(Dimona_2107_1ha_simple$x)) { # for loop for calculating linear distance to edge
-  distance_to_N_edge[i] <- Dimona_2107_1ha_simple$y[i] + 50
-  distance_to_E_edge[i] <- Dimona_2107_1ha_simple$x[i]
-  distance_to_W_edge[i] <- 100-Dimona_2107_1ha_simple$x[i]
-  distance_to_S_edge[i] <- 50-Dimona_2107_1ha_simple$y[i] 
-}
+distance_to_N_edge <- Dimona_2107_1ha_simple$y + 50
+distance_to_E_edge <- Dimona_2107_1ha_simple$x
+distance_to_W_edge <- 100-Dimona_2107_1ha_simple$x
+distance_to_S_edge <- 50-Dimona_2107_1ha_simple$y
+
 
 ha_id_number <- Dimona_2107_1ha_simple$ha_id_number
 distances_Dimona_2107 <- data.frame(ha_id_number,distance_to_N_edge,distance_to_E_edge, # form df containing distances and ha_id_number
@@ -173,3 +191,20 @@ for (i in 1:length(Dimona_2107_1ha_simple$x)) {
 }
 
 Dimona_2107_1ha_join <- left_join(Dimona_2107_1ha_simple,distances_Dimona_2107) # join dfs 
+
+# plot data to check for weirdness
+ggplot(Dimona_2107_1ha_join, aes(x = x, y = y, color = distance_to_N_edge, size = distance_to_E_edge)) + geom_point(alpha = 0.7)
+# Check that y=0 is on the north edge and x=0 is the east edge
+
+# re-combine plots --------------------------------------------------------
+
+xy_dist <-
+  bind_rows(
+    Dimona_2107_1ha_join,
+    Porto_Alegre_1ha_join #, others...
+  )
+
+full <- left_join(data, xy_dist)
+
+
+
