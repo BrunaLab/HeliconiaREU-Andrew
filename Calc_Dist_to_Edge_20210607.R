@@ -263,3 +263,19 @@ for (i in 1:177) {
 }
 
 Dimona_2107_1ha_join <- left_join(Dimona_2107_1ha_simple,distances_Dimona_2107)
+
+# plot data to check for weirdness
+ggplot(Dimona_2107_1ha_join, aes(x = x, y = y, color = distance_to_N_edge, size = distance_to_E_edge)) + geom_point(alpha = 0.7)
+# Check that y=0 is on the north edge and x=0 is the east edge
+
+# re-combine plots --------------------------------------------------------
+
+xy_dist <-
+  bind_rows(
+    Dimona_2107_1ha_join,
+    Porto_Alegre_1ha_join #, others...
+  )
+
+full <- left_join(data, xy_dist)
+
+
