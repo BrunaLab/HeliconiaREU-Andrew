@@ -1,5 +1,5 @@
 # Overview ------------------------------------------------------------------
-
+rm(list=ls())
 # Andrew Mercadante
 # REU Project Summer 2021
 # 
@@ -197,14 +197,25 @@ ggplot(Dimona_2107_1ha_join, aes(x = x, y = y, color = distance_to_N_edge, size 
 # Check that y=0 is on the north edge and x=0 is the east edge
 
 # re-combine plots --------------------------------------------------------
+Colosso_1ha
+Dimona_2107_1ha_join
+Porto_Alegre_1ha_join
+
+Dimona_2107_1ha_join$column <- as.double(Dimona_2107_1ha_join$column) # type error, wouldn't let me bind rows due to conflict
+Porto_Alegre_1ha_join$column <- as.double(Porto_Alegre_1ha_join$column)
+Colosso_1ha$column <- as.double(Colosso_1ha$column)
+
 
 xy_dist <-
   bind_rows(
     Dimona_2107_1ha_join,
-    Porto_Alegre_1ha_join #, others...
+    Porto_Alegre_1ha_join,
+    Colosso_1ha 
   )
 
 full <- left_join(data, xy_dist)
 
+full_1ha <- full %>% 
+  filter(habitat == "1-ha")
 
 
