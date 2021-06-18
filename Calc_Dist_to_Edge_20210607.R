@@ -218,4 +218,25 @@ full <- left_join(data, xy_dist)
 full_1ha <- full %>% 
   filter(habitat == "1-ha")
 
+full_test <- merge(data,xy_dist,by = "ha_id_number") # this approach using merge() was successful 
 
+length(full_test$distance_to_nearest_edge)
+
+full_test_NA <-full_test %>%
+  filter(!is.na(full_test$distance_to_nearest_edge) & !is.na(full_test$distance_to_next_nearest_edge))
+
+# No NAs in full_test, merge was successful
+
+full_join_test <- left_join(data,full_test) # seems successful
+full <- full_join_test
+
+# simple logistic regression --------------------------------------------------------
+
+survival.fit <-glm(surv~distance_to_nearest_edge,data=full_1ha,family=binomial)
+summary(survival.fit)
+# back transform log-odds to a probability
+ log_odds <-survival.fit$coef[2]
+odds <- exp(log_odds)
+probability <- odds/(1+odds)
+
+# Not significant results given this data. SE is fairly large. 
