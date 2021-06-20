@@ -230,13 +230,47 @@ full_test_NA <-full_test %>%
 full_join_test <- left_join(data,full_test) # seems successful
 full <- full_join_test
 
+
+# data validation ---------------------------------------------------------
+# A place for tests and plots of the data to double check that you are getting sensible data.
+# plot data:
+
+ggplot(full_1ha,
+       aes(x = x_final, y = y_final))+
+  #map distances to fill and color, just for visualizing data. Shape = 21 has both fill and color(outline).
+  geom_point(aes(color = distance_to_nearest_edge, fill = distance_to_next_nearest_edge),
+             shape = 21) +
+  facet_wrap(~plot)
+
+# seems like data is missing for a lot of points
+
 # simple logistic regression --------------------------------------------------------
 
-survival.fit <-glm(surv~distance_to_nearest_edge,data=full_1ha,family=binomial)
-summary(survival.fit)
+survival.fit <- glm(surv ~ distance_to_nearest_edge, data=full_1ha, family=binomial)
+summary(survival.fit) #not the p-values you're looking for!
 # back transform log-odds to a probability
- log_odds <-survival.fit$coef[2]
-odds <- exp(log_odds)
-probability <- odds/(1+odds)
+log_odds <-survival.fit$coef[2]
+probability <- plogis(log_odds)
+library(car)
+car::Anova(survival.fit) #these are the p-values you want.
+confint(survival.fit)
+# Not significant results given this data. SE is fairly large, 95% confidence interval overlaps zero
 
-# Not significant results given this data. SE is fairly large. 
+#plot fitted line from model with confidence bands:
+library(broom)
+
+plotdf <-
+  broom::augment(survival.fit,
+                 se_fit = TRUE, #yes, calculate confidence bands
+                 type.predict = "response") #back-transform calculations to probability
+
+ggplot(plotdf, aes(x = distance_to_nearest_edge)) +
+  geom_line(aes(y = .fitted)) +
+  # confidence bands:
+  geom_ribbon(aes(ymin = .fitted - .se.fit, ymax = .fitted + .se.fit), alpha =0.4) +
+  # shows x-values of points along bottom:
+  geom_rug()
+
+#survival is *higher* near the edge. Interesting!, but something seems wrong since dist to nearest edge is <10m  Shouldn't it range from about 0-50m?
+
+
