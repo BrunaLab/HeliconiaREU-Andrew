@@ -34,8 +34,8 @@ EST_1_ha <- data %>%
 # Simplify to one location per plant, since plants don't move
 
 EST_simple <- EST_1_ha %>% 
-  group_by(ha_id_number,row,column) %>%
-  summarize(x=unique(x_final), y= unique(y_final))
+  group_by(plot, ha_id_number,row,column) %>%
+  summarize(x = unique(x_final), y = unique(y_final))
   
 
 str(EST_simple)
@@ -49,8 +49,8 @@ Dimona_2107_1ha <- data %>%
   filter(!is.na(x_final) & !is.na(y_final))
 
 Dimona_2107_1ha_simple <- Dimona_2107_1ha %>%
-  group_by(ha_id_number,row,column) %>%
-  summarize(x=unique(x_final), y=unique(y_final))
+  group_by(plot, ha_id_number,row,column) %>%
+  summarize(plot = unique(plot), x=unique(x_final), y=unique(y_final))
 
 # PORTO ALEGRE 1-HA
 Porto_Alegre_1ha <- data %>%
@@ -58,8 +58,8 @@ Porto_Alegre_1ha <- data %>%
   filter(!is.na(x_final) & !is.na(y_final))
 
 Porto_Alegre_simple <- Porto_Alegre_1ha %>%
-  group_by(ha_id_number,row,column) %>%
-  summarize(x= unique(x_final),y=unique(y_final)) 
+  group_by(plot, ha_id_number,row,column) %>%
+  summarize(plot = unique(plot), x= unique(x_final),y=unique(y_final)) 
 
 # A generic way to check if they have the same number of plants is 
 # to ask TRUE/FALSE if the number of unique id's in each df are equal
@@ -110,10 +110,10 @@ distance_to_next_nearest_edge <- NULL #ERS or maybe just `dist_nearest` and `dis
 
 # This is awesome!  I could not think of how to get next-nearest distance.  Sorting and using the nth() function is a perfect solution!
 for(i in 1:length(EST_simple$x)){
-distances$distance_to_nearest_edge[i] <-apply(distances[i,2:5],1,FUN=min) # apply min() to 2nd-5th column of ith row
-distance.temp <- as.matrix(distances[i,2:5]) # convert to matrix so nth() can work
-distances$distance_to_next_nearest_edge[i] <- Rfast::nth(distance.temp,2,descending=F) # run nth() to select 2nd value 
-                                                                                       # in a vector of increasing distances 
+  distances$distance_to_nearest_edge[i] <-apply(distances[i,2:5],1,FUN=min) # apply min() to 2nd-5th column of ith row
+  distance.temp <- as.matrix(distances[i,2:5]) # convert to matrix so nth() can work
+  distances$distance_to_next_nearest_edge[i] <- Rfast::nth(distance.temp,2,descending=F) # run nth() to select 2nd value 
+  # in a vector of increasing distances 
 }
 
 Colosso_1ha <- left_join(EST_simple,distances) # join the previous Colosso data with newly aquired distances df
@@ -213,30 +213,50 @@ xy_dist <-
     Colosso_1ha 
   )
 
-full <- left_join(data, xy_dist)
+full <- right_join(data %>% select(-x, -y), #get rid of old, incorrect coords which don't join up.
+                   xy_dist)
+range(full$distance_to_nearest_edge)
+nrow(full)
 
-full_1ha <- full %>% 
-  filter(habitat == "1-ha")
+# data validation ---------------------------------------------------------
+# A place for tests and plots of the data to double check that you are getting sensible data.
+# plot data:
 
-full_test <- merge(data,xy_dist,by = "ha_id_number") # this approach using merge() was successful 
+p <- ggplot(full, aes(x = x, y = y)) + facet_wrap(~plot)
 
-length(full_test$distance_to_nearest_edge)
+p +  geom_point(aes(color = distance_to_nearest_edge)) + scale_color_viridis_c()
+p +  geom_point(aes(color = distance_to_next_nearest_edge)) + scale_color_viridis_c()
 
-full_test_NA <-full_test %>%
-  filter(!is.na(full_test$distance_to_nearest_edge) & !is.na(full_test$distance_to_next_nearest_edge))
-
-# No NAs in full_test, merge was successful
-
-full_join_test <- left_join(data,full_test) # seems successful
-full <- full_join_test
+# do we have growth data for all ?
+ggplot(full, aes(x = year, y = ht, group = ha_id_number)) + geom_line() + facet_wrap(~plot)
 
 # simple logistic regression --------------------------------------------------------
 
-survival.fit <-glm(surv~distance_to_nearest_edge,data=full_1ha,family=binomial)
-summary(survival.fit)
+survival.fit <- glm(surv ~ distance_to_nearest_edge, data=full, family=binomial)
+summary(survival.fit) #not the p-values you're looking for!
 # back transform log-odds to a probability
- log_odds <-survival.fit$coef[2]
-odds <- exp(log_odds)
-probability <- odds/(1+odds)
+log_odds <-survival.fit$coef[2]
+probability <- plogis(log_odds)
+library(car)
+car::Anova(survival.fit) #these are the p-values you want.
+confint(survival.fit)
+# Not significant results given this data. SE is fairly large, 95% confidence interval overlaps zero
 
-# Not significant results given this data. SE is fairly large. 
+#plot fitted line from model with confidence bands:
+library(broom)
+
+plotdf <-
+  broom::augment(survival.fit,
+                 se_fit = TRUE, #yes, calculate confidence bands
+                 type.predict = "response") #back-transform calculations to probability
+
+ggplot(plotdf, aes(x = distance_to_nearest_edge)) +
+  geom_line(aes(y = .fitted)) +
+  # confidence bands:
+  geom_ribbon(aes(ymin = .fitted - .se.fit, ymax = .fitted + .se.fit), alpha =0.4) +
+  # shows x-values of points along bottom:
+  geom_rug()
+
+#survival is *higher* near the edge. Interesting!, but something seems wrong since dist to nearest edge is <10m  Shouldn't it range from about 0-50m?
+
+
