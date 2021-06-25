@@ -15,7 +15,15 @@ library(Rfast)
 library(tidyverse)
 library(here)
 
+if(!"car" %in% installed.packages()) {
+  install.packages("car")
+}
+library(car)
 
+if(!"broom" %in% installed.packages()) {
+  install.packages("broom")
+}
+library(broom)
 # loading datasets --------------------------------------------------------
 
 data <- read_rds(here("data","one_ha_coords_updated.rds")) # reading in .rds file
@@ -237,8 +245,10 @@ summary(survival.fit) #not the p-values you're looking for!
 # back transform log-odds to a probability
 log_odds <-survival.fit$coef[2]
 probability <- plogis(log_odds)
+?plogis()
 library(car)
 car::Anova(survival.fit) #these are the p-values you want.
+
 confint(survival.fit)
 # Not significant results given this data. SE is fairly large, 95% confidence interval overlaps zero
 
@@ -249,7 +259,7 @@ plotdf <-
   broom::augment(survival.fit,
                  se_fit = TRUE, #yes, calculate confidence bands
                  type.predict = "response") #back-transform calculations to probability
-
+?augment()
 ggplot(plotdf, aes(x = distance_to_nearest_edge)) +
   geom_line(aes(y = .fitted)) +
   # confidence bands:
@@ -257,6 +267,42 @@ ggplot(plotdf, aes(x = distance_to_nearest_edge)) +
   # shows x-values of points along bottom:
   geom_rug()
 
-#survival is *higher* near the edge. Interesting!, but something seems wrong since dist to nearest edge is <10m  Shouldn't it range from about 0-50m?
+#survival is *higher* near the edge. Interesting! 
+# Logistic regression for flowering probability --------------------------------
+flower.fit <- glm(flwr~distance_to_nearest_edge,data=full,family=binomial)
+summary(flower.fit)
+log_odds_flwr <- flower.fit$coef[2]
+flwr_probability <- plogis(log_odds_flwr)
 
+car::Anova(flower.fit)
+confint(flower.fit)
+
+flowerdf <- broom::augment(flower.fit,
+                           se_fit = TRUE,
+                           type.predict = "response")
+
+ggplot(flowerdf, aes(x = distance_to_nearest_edge)) +
+  geom_line(aes(y = .fitted)) +
+  geom_ribbon(aes(ymin = .fitted - .se.fit, ymax = .fitted + .se.fit), alpha = 0.4) # alpha modulates transparency
+
+# Some exploratory data visualization, practicing with ggplot ------------------
+
+ggplot(data=full, aes(x=year , y= ht, color=shts))+
+  geom_point()+
+  geom_smooth()+
+facet_wrap(~plot)
+
+
+# look at how height distributions changes over time ---------------------------
+#full$year <- as.factor(full$year) # had to do this to plot year as linetype or color..
+ggplot(data=full, aes(x=ht, color= year))+
+ geom_density()+
+  facet_wrap(~plot)
+# easier to see how year-to-year plant height changed within plots
+# seems like height distributions are right-skewed, not normal. 
+
+ggplot(data=full, aes(x=ht, color=plot))+
+  geom_density()+
+  facet_wrap(~year)
+# Helps me see how plant height distributions vary among plots within a given year. 
 
