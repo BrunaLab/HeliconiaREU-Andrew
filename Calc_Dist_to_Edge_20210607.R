@@ -24,6 +24,11 @@ if(!"broom" %in% installed.packages()) {
   install.packages("broom")
 }
 library(broom)
+
+if(!"lme4" %in% installed.packages()){
+  install.packages("lme4")
+}
+library(lme4)
 # loading datasets --------------------------------------------------------
 
 data <- read_rds(here("data","one_ha_coords_updated.rds")) # reading in .rds file
@@ -289,11 +294,12 @@ ggplot(flowerdf, aes(x = distance_to_nearest_edge)) +
 
 ggplot(data=full, aes(x=year , y= ht, color=shts))+
   geom_point()+
-  geom_smooth()+
 facet_wrap(~plot)
 
-
-# look at how height distributions changes over time ---------------------------
+ggplot(data=full, aes(x=year))+
+  geom_boxplot(aes(y=ht))+
+facet_wrap(~plot)
+# look at how height distributions changes over time ----6-25-2021--------------
 #full$year <- as.factor(full$year) # had to do this to plot year as linetype or color..
 ggplot(data=full, aes(x=ht, color= year))+
  geom_density()+
@@ -306,3 +312,9 @@ ggplot(data=full, aes(x=ht, color=plot))+
   facet_wrap(~year)
 # Helps me see how plant height distributions vary among plots within a given year. 
 
+# Look at survival using lme4 package and glmer function -----------------------
+survival2.fit <- glmer(surv~size_prev+distance_to_nearest_edge+(1|year),data=full,
+                       family=binomial,nAGQ=25)
+summary(survival2.fit)
+
+# Two random effects- 
