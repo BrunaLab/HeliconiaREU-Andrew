@@ -3,6 +3,7 @@ library(here)
 library(car)
 library(broom)
 library(lme4)
+
 ha_data <-read_rds(here("data","full_1ha_location_data.rds"))
 data <- read_rds(here("data","one_ha_coords_updated.rds"))
 # simple logistic regression --------------------------------------------------------
@@ -73,18 +74,25 @@ ggplot(data=ha_data, aes(x=ht, color=plot))+
   facet_wrap(~year)
 # Helps me see how plant height distributions vary among plots within a given year. 
 
-#Histogram of plants at varying distances from edge. 
+#Histogram of plants at varying distances from edge  
 
-
-
-
-
+ggplot(data=ha_data,aes(x=distance_to_nearest_edge))+
+  geom_histogram(breaks=seq(0,50,by=10),color="black",fill="white")
+  
+# density plot overlaid
+ggplot(data=ha_data,aes(x=distance_to_nearest_edge))+
+  geom_histogram(aes(y=..density..),breaks=seq(0,50,by=10),
+                 color="black",fill="white",xlim=c(0,50))+
+  geom_density(alpha=0.15, fill= "blue")+
+  facet_wrap(~plot)
 
 
 # Look at survival using lme4 package and glmer function -----------------------
 survival2.fit <- glmer(surv~size_prev+distance_to_nearest_edge+(1|year),data=ha_data,
                        family=binomial,nAGQ=25) #uses GHQ method, 25 iterations
 summary(survival2.fit)
+
+
 
 
 
