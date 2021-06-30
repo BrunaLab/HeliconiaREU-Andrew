@@ -319,7 +319,7 @@ summary(survival2.fit)
 
 
 # Trying to find a survival probability for CF habitat
-CF_surv <- full_join_test %>%
+CF_surv <- data %>%
   filter(!is.na(surv)) %>%
   filter(habitat=="CF") %>%
   select(ranch,habitat,ha_id_number,year,plot,surv)
