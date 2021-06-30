@@ -300,7 +300,7 @@ ggplot(data=full, aes(x=year))+
   geom_boxplot(aes(y=ht))+
 facet_wrap(~plot)
 # look at how height distributions changes over time ----6-25-2021--------------
-#full$year <- as.factor(full$year) # had to do this to plot year as linetype or color..
+full$year <- as.factor(full$year) # had to do this to plot year as linetype or color..
 ggplot(data=full, aes(x=ht, color= year))+
  geom_density()+
   facet_wrap(~plot)
@@ -314,7 +314,40 @@ ggplot(data=full, aes(x=ht, color=plot))+
 
 # Look at survival using lme4 package and glmer function -----------------------
 survival2.fit <- glmer(surv~size_prev+distance_to_nearest_edge+(1|year),data=full,
-                       family=binomial,nAGQ=25)
+                       family=binomial,nAGQ=25) #uses GHQ method, 25 iterations
 summary(survival2.fit)
 
-# Two random effects- 
+
+# Trying to find a survival probability for CF habitat
+CF_surv <- full_join_test %>%
+  filter(!is.na(surv)) %>%
+  filter(habitat=="CF") %>%
+  select(ranch,habitat,ha_id_number,year,plot,surv)
+
+CF.survival <- glm(surv~1,data = CF_surv,family=binomial)
+summary(CF.survival)
+log_odds_CF <- CF.survival$coef[1]
+surv_transform <- plogis(log_odds_CF)
+
+Ha.survival <- glm(surv~1, data=full, family = binomial)
+log_odds_1ha <-Ha.survival$coef[1]
+surv_1ha <- plogis(log_odds_1ha)
+
+# Unexpected result: 1-ha fragment survival seems to be higher than CF based on 
+# this intercept-only model. 
+
+plot_CF <-
+  broom::augment(CF.survival,
+                 se_fit = TRUE, #yes, calculate confidence bands
+                 type.predict = "response")
+# Visual comparison of the two survival rates 
+ggplot(plotdf, aes(x = distance_to_nearest_edge)) +
+  geom_line(aes(y = .fitted)) +
+  # confidence bands:
+  geom_ribbon(aes(ymin = .fitted - .se.fit, ymax = .fitted + .se.fit), alpha =0.4) +
+  geom_hline(yintercept=0.955,color="red")
+  
+
+
+
+  
