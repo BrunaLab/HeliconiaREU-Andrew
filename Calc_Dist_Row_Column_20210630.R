@@ -1,173 +1,188 @@
 # Calculating distance to edge at broader scale. 
-rm(list=ls())
+#rm(list=ls())
 library(here)
 library(tidyverse)
+alt_data <- read_csv(here("data","cleaned_ha_data_2021-07-01.csv"))
 
-rough_data <-read_rds(here("data","one_ha_coords_updated.rds"))
+# Porto-Alegre 1-ha fragment -------------------------------------------------
+Porto_Alegre_1ha <- alt_data %>%
+  filter(ranch == "PortoAlegre" & habitat == "1-ha") %>%
+  filter(!is.na(row) & !is.na(column))
 
-rough_data %>%
-  filter(!is.na(row) & !is.na(column)) # df same length, no missing values for row or column 
+PortoAlegre_1ha_layout <-  # assuming bottom-left is origin, and E1 is at (0,0)
+  expand_grid(
+    tibble(row = LETTERS[5:1],
+           plot_y = seq(0,40,10)),  
+    tibble(column = 1:10,
+           plot_x = seq(0,90,10))
+  ) %>%
+  add_column(plot = "5753")
 
-refined_data <-rough_data %>%
-  filter(habitat == "1-ha") %>%
-  filter(!is.na(plot_x) | !is.na(plot_y))
+PortoAlegre_1ha_layout$plot <-as.double(PortoAlegre_1ha_layout$plot)
+PortoAlegre_1ha_join <- left_join(Porto_Alegre_1ha,PortoAlegre_1ha_layout)
+str(PortoAlegre_1ha_layout)
 
-refined_data <-refined_data %>%
-  mutate(rough_x = plot_x+5,
-         rough_y = plot_y+5)
-# use code from Calc_Dist_to_Edge_20210607 to calculate distance to nearest edge for 3 plots
-# we have distance data for 
-
-EST_1ha <- refined_data %>%
-  filter(ranch == "Esteio-Colosso" & habitat == "1-ha")
-
-EST_simple <- EST_1ha %>% 
+Porto_Alegre_simple <- PortoAlegre_1ha_join %>%
   group_by(ha_id_number,plot,row,column) %>%
-  summarize(x= unique(rough_x), y= unique(rough_y))
-length(unique(EST_1ha$ha_id_number))
+  mutate(rough_x = plot_x + 5,
+         rough_y = plot_y + 5) %>%
+  summarise(x=unique(rough_x),y=unique(rough_y))
 
-distance_to_N_edge <- NULL # set up variables to store distances to all edges
-distance_to_S_edge <- NULL
-distance_to_E_edge <- NULL
-distance_to_W_edge <- NULL
-# ERS: you might consider shorter variable names.  Maybe `dist_to_N` or even just `dist_N`?
+dist_N <- NULL # setup distance variables
+dist_E <- NULL
+dist_W<- NULL
+dist_S <- NULL
+
+dist_N <- 50-Porto_Alegre_simple$y
+dist_E <- Porto_Alegre_simple$x
+dist_W <- 100- Porto_Alegre_simple$x
+dist_S <- Porto_Alegre_simple$y + 50
+
+ha_id_number <- Porto_Alegre_simple$ha_id_number
+distances_Alegre <- data.frame(ha_id_number,dist_N,dist_E, # form df of distances w/ ha_id_number
+                               dist_W,dist_S)
+dist_near<- NULL
+dist_next <- NULL
+
+for(i in 1:210){
+  distances_Alegre$dist_near[i] <- apply(distances_Alegre[i,2:5],1,FUN=min)
+  distance.temp <- as.matrix(distances_Alegre[i,2:5])
+  distances_Alegre$dist_next[i] <- Rfast::nth(distance.temp,2,descending=F)
+}
+
+Porto_Alegre_1ha_final <- left_join(Porto_Alegre_simple,distances_Alegre)
+
+
+
+
+EST_1ha<- alt_data %>%
+  filter(ranch == "Esteio-Colosso" & habitat == "1-ha") %>%
+  filter(!is.na(row) & !is.na(column))
+  
+EST_COL_1ha_layout <-
+  expand_grid(
+    tibble(row = LETTERS[1:5], 
+           plot_y =seq(0,40,10)), 
+    tibble(column = 10:1,
+           plot_x = seq(0,90,10))
+  ) %>%
+  add_column(plot="5751")
+
+EST_COL_1ha_layout$plot <- as.double(EST_COL_1ha_layout$plot)
+
+EST_1ha_join1 <- left_join(EST_1ha,EST_COL_1ha_layout)
+
+
+EST_simple <- EST_1ha_join1 %>% 
+  group_by(ha_id_number,plot,row,column) %>%
+  mutate(rough_x = plot_x + 5,
+         rough_y = plot_y + 5) %>%
+  summarize(x= unique(rough_x), y= unique(rough_y))
+
+
+
+dist_N <- NULL # setup distance variables
+dist_E <- NULL
+dist_W<- NULL
+dist_S <- NULL
 
 #doesn't need to be a for-loop.  Addition is vectorized.
-distance_to_N_edge <- EST_simple$y + 20
-distance_to_E_edge <- EST_simple$x 
-distance_to_W_edge <- 100 - EST_simple$x
-distance_to_S_edge <- EST_simple$y + 50
+dist_N <- EST_simple$y + 20
+dist_E <- EST_simple$x 
+dist_W <- 100 - EST_simple$x
+dist_S <- EST_simple$y + 50
 
 ha_id_number <- EST_simple$ha_id_number # need to make this a variable so I can add it  
 # into a new dataframe to allow for a join later. 
 
-distances <- data.frame(ha_id_number,distance_to_N_edge,distance_to_E_edge,
-                        distance_to_W_edge,distance_to_S_edge)
-
-Colosso_1ha <- left_join(EST_simple,distances) # join dataframes
-
-#distances$dist_to_nearest_edge <- apply(distances,1,FUN=min) this is how to get first edge
-
-# How to get second closest edge?
-
-distance_to_nearest_edge <- NULL # set up variables to store the two lowest values from the 4 distances
-distance_to_next_nearest_edge <- NULL #ERS or maybe just `dist_nearest` and `dist_next`?
+distances_EST <- data.frame(ha_id_number,dist_N,dist_E,dist_W,dist_S)
+dist_near <- NULL # set up variables to store the two lowest values from the 4 distances
+dist_next <- NULL #ERS or maybe just `dist_nearest` and `dist_next`?
 
 # This is awesome!  I could not think of how to get next-nearest distance.  Sorting and using the nth() function is a perfect solution!
 for(i in 1:length(EST_simple$x)){
-  distances$distance_to_nearest_edge[i] <-apply(distances[i,2:5],1,FUN=min) # apply min() to 2nd-5th column of ith row
-  distance.temp <- as.matrix(distances[i,2:5]) # convert to matrix so nth() can work
-  distances$distance_to_next_nearest_edge[i] <- Rfast::nth(distance.temp,2,descending=F) # run nth() to select 2nd value 
+  distances_EST$dist_near[i] <-apply(distances_EST[i,2:5],1,FUN=min) # apply min() to 2nd-5th column of ith row
+  distance.temp <- as.matrix(distances_EST[i,2:5]) # convert to matrix so nth() can work
+  distances_EST$dist_next[i] <- Rfast::nth(distance.temp,2,descending=F) # run nth() to select 2nd value 
   # in a vector of increasing distances 
 }
 
-Colosso_1ha <- left_join(EST_simple,distances) # join the previous Colosso data with newly aquired distances df
-
-# Porto Alegre 1-ha fragment ---------------------------------------------------
-Porto_Alegre_simple <- refined_data %>%
-  filter(habitat == "1-ha" & ranch == "PortoAlegre") %>%
-  group_by(ha_id_number,plot,row,column) %>%
-  summarise(x=unique(rough_x),y=unique(rough_y))
-
-distance_to_N_edge <- NULL # setup distance variables
-distance_to_E_edge <- NULL
-distance_to_W_edge <- NULL
-distance_to_S_edge <- NULL
-
-distance_to_N_edge <- 50-Porto_Alegre_simple$y
-distance_to_E_edge <- Porto_Alegre_simple$x
-distance_to_W_edge <- 100- Porto_Alegre_simple$x
-distance_to_S_edge <- Porto_Alegre_simple$y + 50
-
-ha_id_number <- Porto_Alegre_simple$ha_id_number
-distances_Alegre <- data.frame(ha_id_number,distance_to_N_edge,distance_to_E_edge, # form df of distances w/ ha_id_number
-                               distance_to_W_edge,distance_to_S_edge)
-
-## Tidyverse version (I think):
-# distances_Alegre <-
-#   Porto_Alegre_simple %>% 
-#   mutate(distance_to_N_edge = 50 - y,
-#          distance_to_E_edge = x,
-#          distance_to_W_edge = 100 - x,
-#          distance_to_S_edge = y + 50)
-
-distance_to_nearest_edge <- NULL
-distance_to_next_nearest_edge <- NULL
-
-for(i in 1:210){
-  distances_Alegre$distance_to_nearest_edge[i] <- apply(distances_Alegre[i,2:5],1,FUN=min)
-  distance.temp <- as.matrix(distances_Alegre[i,2:5])
-  distances_Alegre$distance_to_next_nearest_edge[i] <- Rfast::nth(distance.temp,2,descending=F)
-}
-
-## Tidyverse version (I think):
-# distances_Alegre %>% 
-#   rowwise() %>% 
-#   mutate(nearest_dist = min(c_across(ends_with("_edge"))),
-#          next_nearest_dist = nth(sort(c_across(ends_with("_edge"))), 2))
-# The tidyverse version is maybe a bit less readable for this one
-
-Porto_Alegre_1ha_join <- left_join(Porto_Alegre_simple,distances_Alegre)
-
+Colosso_1ha <- left_join(EST_simple,distances_EST) # join the previous Colosso data with newly aquired distances df
 
 
 # Dimona 1-ha fragment 2107 ------------------------------------------
-Dimona_2107_1ha_simple <- refined_data %>%
+Dimona_2107_1ha <- alt_data %>%
   filter(bdffp_reserve_no == "2107" & habitat == "1-ha") %>%
+  filter(!is.na(row) & !is.na(column))
+
+dimona_1_layout <- # Assumes bottom-left origin and E1 is at (0,0)
+  expand_grid(
+    tibble(row = LETTERS[5:1], 
+           plot_y = seq(0,40,10)), 
+    tibble(column = 1:10,
+           plot_x = seq(0,90,10))
+  ) %>%
+  add_column(plot = "2107")
+dimona_1_layout$plot <- as.double(dimona_1_layout$plot)
+Dimona_2107_join <- left_join(Dimona_2107_1ha,dimona_1_layout)
+
+Dimona_2107_1ha_simple <- Dimona_2107_join %>%
   group_by(ha_id_number,plot,row,column)%>%
+  mutate(rough_x = plot_x+5,
+         rough_y = plot_y+5) %>%
   summarise(x=unique(rough_x),y=unique(rough_y))
 
-distance_to_N_edge <- NULL # same as above
-distance_to_E_edge <- NULL
-distance_to_W_edge <- NULL
-distance_to_S_edge <- NULL
+dist_N <- NULL # same as above
+dist_E <- NULL
+dist_W <- NULL
+dist_S <- NULL
 
-distance_to_nearest_edge <- NULL # same as above
-distance_to_next_nearest_edge <- NULL
+dist_near <- NULL # same as above
+dist_next <- NULL
 
-distance_to_N_edge <- Dimona_2107_1ha_simple$y + 50
-distance_to_E_edge <- Dimona_2107_1ha_simple$x
-distance_to_W_edge <- 100-Dimona_2107_1ha_simple$x
-distance_to_S_edge <- 50-Dimona_2107_1ha_simple$y
+dist_N <- Dimona_2107_1ha_simple$y + 50
+dist_E<- Dimona_2107_1ha_simple$x
+dist_W<- 100-Dimona_2107_1ha_simple$x
+dist_S <- 50-Dimona_2107_1ha_simple$y
 
 
 ha_id_number <- Dimona_2107_1ha_simple$ha_id_number
-distances_Dimona_2107 <- data.frame(ha_id_number,distance_to_N_edge,distance_to_E_edge, # form df containing distances and ha_id_number
-                                    distance_to_W_edge,distance_to_S_edge)
+distances_Dimona_2107 <- data.frame(ha_id_number,dist_N,dist_E, # form df containing distances and ha_id_number
+                                    dist_W,dist_S)
 
 for (i in 1:length(Dimona_2107_1ha_simple$x)) {
-  distances_Dimona_2107$distance_to_nearest_edge[i] <- apply(distances_Dimona_2107
+  distances_Dimona_2107$dist_near[i] <- apply(distances_Dimona_2107
                                                              [i,2:5],1,FUN=min)
   distance.temp <- as.matrix(distances_Dimona_2107[i,2:5])
-  distances_Dimona_2107$distance_to_next_nearest_edge[i] <-Rfast::nth(distance.temp,2,descending=F)
+  distances_Dimona_2107$dist_next[i] <-Rfast::nth(distance.temp,2,descending=F)
 }
 
-Dimona_2107_1ha_join <- left_join(Dimona_2107_1ha_simple,distances_Dimona_2107) # join dfs 
+Dimona_2107_1ha <- left_join(Dimona_2107_1ha_simple,distances_Dimona_2107) # join dfs 
 
 # plot data to check for weirdness
-ggplot(Dimona_2107_1ha_join, aes(x = x, y = y, color = distance_to_N_edge, size = distance_to_E_edge)) + geom_point(alpha = 0.7)+
+ggplot(Dimona_2107_1ha, aes(x = x, y = y, color = dist_N, size = dist_E)) + geom_point(alpha = 0.7)+
   coord_fixed()
 # Check that y=0 is on the north edge and x=0 is the east edge
 
 # re-combine plots --------------------------------------------------------
 Colosso_1ha
-Dimona_2107_1ha_join
-Porto_Alegre_1ha_join
+Dimona_2107_1ha
+Porto_Alegre_1ha_final
 
 
-Dimona_2107_1ha_join$column <- as.double(Dimona_2107_1ha_join$column) # type error, wouldn't let me bind rows due to conflict
-Porto_Alegre_1ha_join$column <- as.double(Porto_Alegre_1ha_join$column)
+Dimona_2107_1ha$column <- as.double(Dimona_2107_1ha$column) # type error, wouldn't let me bind rows due to conflict
+Porto_Alegre_1ha_final$column <- as.double(Porto_Alegre_1ha_final$column)
 Colosso_1ha$column <- as.double(Colosso_1ha$column)
 
 
 xy_dist <-
   bind_rows(
-    Dimona_2107_1ha_join,
-    Porto_Alegre_1ha_join,
+    Dimona_2107_1ha,
+    Porto_Alegre_1ha_final,
     Colosso_1ha 
   )
 
-full_test <- right_join(rough_data %>% select(-x, -y), #get rid of old, incorrect coords which don't join up.
-                   xy_dist)
+full_test <- right_join(alt_data, xy_dist) 
+                   
 write_rds(full_test,here("data","10m_resolution_1ha_dists.rds"))
   
