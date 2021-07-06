@@ -62,7 +62,7 @@ car::Anova(surv_size_dist.fit) # within this model, dist_near is not significant
 # Mixed-effects model with year as random effect.
 dist_data$year <- as.factor(dist_data$year)
 dist_data_no_NA <- dist_data %>%
-  filter(!is.na(log_size_prev & !is.na(surv)) & !is.)
+  filter(!is.na(log_size_prev) & !is.na(surv))
 
 surv.mixeff.fit <- glmer(surv~size_prev+(1|year),data=dist_data_no_NA,
                          family=binomial)
@@ -172,15 +172,8 @@ plot(function(x)dst(x,dp=skew_t@param$dp),from = -1.0, to = 64, col="red",add=TR
 
 log_growth<-log(data_finite$growth) # log transforming it produces lots of NaNs
 
-# Ultimately what family-link combination will allow me to create linear predictor
-# terms that don't result in non-normally distributed residuals, if family=gaussian?
+# Ultimately what family-link combination will allow me to create linear predictors?
 # Is a normal distribution used in MLE methods appropriate?
-
-
-# My understanding has changed slightly, GLM family should be relevant to the 
-# CONDITIONAL distribution of the response variable (Y|Xi). 
-
-# Need to understand how to plot these better, especially with multiple predictors??
 
 
 ggplot(data=data_finite,aes(x= jitter(dist_near),y=growth))+
@@ -199,10 +192,13 @@ summary(growth.dist.fit)
 plot(growth.dist.fit$fitted.values,growth.dist.fit$residuals)
 
 plot(growth.dist.fit) # provides series of graph, most seem to indicate this 
+
 # isn't a great-fitting model. 
 
 
 # Look at alternative ways to define growth. 
+
+
 
 
 
