@@ -39,10 +39,8 @@ dist_near and dist_next are likely correlated, how to account for this in model 
 
 flwr,surv - binary response variables 
 
-size- predictor variable that is derived from ht*shts. This variable alongside growth causes
-the most problems, has great variation and heavily skewed. 
+size- predictor variable that is derived from ht*shts. This variable alongside growth causes the most problems, is heavily skewed.  
 
-fold_grwth - performs better after being log transformed and modeled with gaussian family, but still unruly. 
 
 # How to reasonably test edge interaction?
 
@@ -50,6 +48,9 @@ My thoughts on this are to create a categorical variable plot_type that uses val
 of dist_next and dist_near to differentiate between two types of plots: corner plots and
 single-edge plots. Can then include plot_type in model building and test for improvement using 
 either AIC or Anova methods. This is of course assuming that edge interaction is most likely to be detectable at a corner where two edges converge. From there we would have to interpret model output to understand the nature of the edge interaction (strengthening,weakening). 
+
+Alternatively, is it as simple as including dist_near*dist_next as a term in the models and then simply testing a second model as dist_near + dist_next and comparing AICs?
+
 
 # How to tease apart differences in flowering probability in different habitats?
 
@@ -62,6 +63,12 @@ for this discrepancy in size demographics between the habitat types, or should w
 Currently using point of overlap of 84% CIs with upper-bound of CF to determine the 
 DOI. This method doesn't seem to work if there is no overlap between the two (estimates for CF and FF never overlap w/ varying distance.)
 
+
+# Addressing multicollinearity in dist predictors
+
+Read that you can reduce VIFs by centering independent variables via standardization.
+Alternatives include LASSO and ridge regression techniques, but these shrink certain coefficients towards 0, so not sure that is going to be helpful since we are interested
+in the predictors that are related. Maybe instead of including dist_next I can include plot_type predictor mentioned above, not sure how much more or less correlated those two variables would be. 
 
 
 
