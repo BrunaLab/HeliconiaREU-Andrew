@@ -82,6 +82,8 @@ car::Anova(shts.m1)
 
 # Residual deviance - difference in G^2 between a saturated model and built model
 # Null deviance - difference in G^2 between a saturated model and intercept-only model.
+#these concepts can be largely be ignored in logistic regression, as LL(saturated)=0 and
+#is not involved in calculated psuedo R^2
 
 # Homer-Lemeshow statistic as an alternative for measuring goodness-of-fit.
 
