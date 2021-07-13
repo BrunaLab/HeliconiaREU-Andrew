@@ -82,8 +82,7 @@ car::Anova(shts.m1)
 
 # Residual deviance - difference in G^2 between a saturated model and built model
 # Null deviance - difference in G^2 between a saturated model and intercept-only model.
-#these concepts can be largely be ignored in logistic regression, as LL(saturated)=0 and
-#is not involved in calculated psuedo R^2
+
 
 # Homer-Lemeshow statistic as an alternative for measuring goodness-of-fit.
 
@@ -98,6 +97,11 @@ car::Anova(shts.m1)
 # R^2 = (LL(overall probability)-LL(fit))/LL(overall probability)
 # 2(LL(fit)-LL(overall probability)) = Chi-square value w/ associated p-value
 
+# AIC is just residual deviance adjusted for number of parameters in the model
 
+# ll.null <- model$null.deviance/-2
+#ll.proposed <- model$deviance/-2
 
+# R_sq <- (ll.null-ll.proposed)/ll.null 
+# 1-pchisq(2*(ll.proposed-ll.null),df=(length(model$coefficients)-1))
 
