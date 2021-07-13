@@ -1,0 +1,68 @@
+---
+title: "Questions_Lab_Meeting_20210713"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r include=FALSE}
+library(tidyverse)
+library(here)
+library(MASS)
+library(lme4)
+library(car)
+library(broom)
+```
+
+# Understanding the dataframe variables' role in model building
+
+Habitat: Currently I've only built models from datasets that are entirely 1-ha or CF, mainly 
+because I don't have a distance value for CF plants. I suppose I could set dist_near = 500 or some similar number and then treat habitat as a categorical variable and test for significance, or I can continue to just compare outputs between the two habitat types, if appropriate.
+
+bdffp_reserve_no - treat as categorical variable, take into account plot variation in vital rates due to things like architecture and composition of surrounding matrix.
+
+year - categorical variable treated as a random effect in mixed effect model
+
+dist_near and dist_next - currently treated as continuous variables, but since this dataset
+simplifies the true distance to edge to be the center of the plot I wonder if treating it 
+categorically is ok since the plants aren't actually taking on a full range of unique values.
+
+dist_near and dist_next are likely correlated, how to account for this in model building?
+
+flwr,surv - binary response variables 
+
+size- predictor variable that is derived from ht*shts. This variable alongside growth causes
+the most problems, has great variation and heavily skewed. 
+
+fold_grwth - performs better after being log transformed and modeled with gaussian family, but still unruly. 
+
+# How to reasonably test edge interaction?
+
+My thoughts on this are to create a categorical variable plot_type that uses value
+of dist_next and dist_near to differentiate between two types of plots: corner plots and
+single-edge plots. Can then include plot_type in model building and test for improvement using 
+either AIC or Anova methods. This is of course assuming that edge interaction is most likely to be detectable at a corner where two edges converge. From there we would have to interpret model output to understand the nature of the edge interaction (strengthening,weakening). 
+
+# How to tease apart differences in flowering probability in different habitats?
+
+On Eric's poster I saw he mentioned that CF flowering probability was higher due to there
+being more large plants inside CF that were more likely to flower. Is there a way to control 
+for this discrepancy in size demographics between the habitat types, or should we even do that? I suppose the problem is that I don't know if the differences in flowering probability is due to demographic differences in size, edge effects that may impact size, or some combination of both. 
+
+# Determining magnitude and DOI of edge effects
+
+Currently using point of overlap of 84% CIs with upper-bound of CF to determine the 
+DOI. This method doesn't seem to work if there is no overlap between the two (estimates for CF and FF never overlap w/ varying distance.)
+
+
+
+
+
