@@ -85,4 +85,17 @@ car::Anova(shts.m1)
 
 # Homer-Lemeshow statistic as an alternative for measuring goodness-of-fit.
 
+# constructing interaction plots, maybe consider treating dist_near as a categorical
+#variable for this particular data set. 
+
+# when model is a good fit, log-likelihood is close to 0, when it is poorly fitted, should
+#be a large negative number
+
+# McFaddens Psuedo-R2 for logistic regression
+
+# R^2 = (LL(overall probability)-LL(fit))/LL(overall probability)
+# 2(LL(fit)-LL(overall probability)) = Chi-square value w/ associated p-value
+
+
+
 
