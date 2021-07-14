@@ -9,21 +9,14 @@ library(car)
 library(here)
 
 # load and clean up data ---------------------------------------------------------------
-dist_data <- read_rds(here("data","rough_dist_data_10m.rds"))
-
-# remove infinte values
-df <-
-  dist_data %>% 
-  filter(is.finite(log_size) & is.finite(log_size_prev)) %>% 
-  mutate(year = as.factor(year), plot = as.factor(plot))
-
+dist_data <- read_rds(here("data","10m_resolution_1ha_dists.rds"))
 
 # size --------------------------------------------------------------------
 
 #one option is to just model size instead of growth
 
 m_size <- lmer(log_size ~ log_size_prev + dist_near*dist_next + (1|year),
-                data = df)
+                data = dist_data)
 
 check_model(m_size)
 #not terrible, but residuals are a little leptokurtic
@@ -33,7 +26,7 @@ check_model(m_size)
 
 # calculate some different measures of growth
 df <-
-  df %>% 
+  dist_data %>% 
   mutate(fold_change = size / size_prev,
          log2_fc = log(fold_change, base = 2), #Interpret as number of doublings.  log2 fold change of 3 = fold change of 8 or 2*2*2 times bigger than in previous year (3 doublings)
          growth = size - size_prev,

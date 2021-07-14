@@ -7,7 +7,7 @@ library(lme4)
 library(MASS)
 library(car)
 library(sn)
-dist_data <-read_rds(here("data","rough_dist_data_10m.rds"))
+dist_data <-read_rds(here("data","10m_resolution_1ha_dists.rds"))
 dataCF <- read_csv(here("data","ha_clean.csv"),
                    col_types = cols(plot = col_character()))
 # Survival model, intercept only --------------------------------------------
