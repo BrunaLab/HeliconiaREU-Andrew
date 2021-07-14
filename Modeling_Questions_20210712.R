@@ -4,11 +4,14 @@ library(here)
 library(tidyverse)
 library(lme4)
 library(MASS)
-#library(performance)
+# library(performance)
 #library(see)
 #library(gridExtra)
 #library(qqplotr)
-dist_data <- read_rds(here("data","rough_dist_data_10m.rds"))
+
+dist_data <- 
+  read_rds(here("data","10m_resolution_1ha_dists.rds"))
+
 
 surv.null <- glm(surv~1,data=dist_data, family=binomial)
 summary(surv.null) # AIC 3436
@@ -25,8 +28,7 @@ surv.m3 <- glm(surv~dist_near+size_prev,data=dist_data,family=binomial)
 summary(surv.m3)
 car::Anova(surv.m3) # in this model, dist_near no longer significant predictor
 
-noNA <- dist_data %>%
-  filter(!is.na(size_prev) & !is.na(surv))
+
 dist_data$year <- as.factor(dist_data$year)
 surv.m4 <- glmer(surv~size_prev+bdffp_reserve_no+(1|year),data=noNA,family=binomial)
 summary(surv.m4) # AIC 2830.9
@@ -34,7 +36,7 @@ car::Anova(surv.m4)
 
 
 # Size_prev is a powerful predictor, but size itself is derived from equation: ht*shts 
-# Maybe dist predictors are significant on these terms? 
+# Maybe dist predictors are significant on  these terms? 
 
 ggplot(data=dist_data,aes(x=ht))+
   geom_histogram(fill="blue",color="white")
