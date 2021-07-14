@@ -54,7 +54,6 @@ for(i in 1:210){
 
 Porto_Alegre_1ha_final <- left_join(Porto_Alegre_simple,distances_Alegre)
 
-
 # Colosso -----------------------------------------------------------------
 
 EST_1ha <-
@@ -100,7 +99,6 @@ for(i in 1:length(EST_simple$x)){
 }
 
 Colosso_1ha <- left_join(EST_simple, distances_EST) # join the previous Colosso data with newly aquired distances df
-
 
 # Dimona 1-ha fragment 2107 ------------------------------------------
 Dimona_2107_1ha <-
@@ -148,21 +146,14 @@ for (i in 1:length(Dimona_2107_1ha_simple$x)) {
 
 Dimona_2107_1ha <- left_join(Dimona_2107_1ha_simple,distances_Dimona_2107) # join dfs 
 
-# plot data to check for weirdness
-ggplot(Dimona_2107_1ha, aes(x = x, y = y, color = dist_N, size = dist_E)) + geom_point(alpha = 0.7)+
-  coord_fixed()
-# Check that y=0 is on the north edge and x=0 is the east edge
-
 # re-combine plots --------------------------------------------------------
 # Colosso_1ha
 # Dimona_2107_1ha
 # Porto_Alegre_1ha_final
 
-
 Dimona_2107_1ha$column <- as.double(Dimona_2107_1ha$column) # type error, wouldn't let me bind rows due to conflict
 Porto_Alegre_1ha_final$column <- as.double(Porto_Alegre_1ha_final$column)
 Colosso_1ha$column <- as.double(Colosso_1ha$column)
-
 
 xy_dist <-
   bind_rows(
@@ -172,6 +163,11 @@ xy_dist <-
   )
 
 full_test <- right_join(alt_data, xy_dist) 
-                   
+
+ggplot(full_test, aes(x = x, y = y, color = dist_N, size = dist_E)) +
+  geom_point(alpha = 0.7)+
+  coord_fixed() +
+  facet_wrap(~plot, ncol = 1)
+# Check that plot orientations are correct
+
 write_rds(full_test,here("data", "10m_resolution_1ha_dists.rds"))
-  
