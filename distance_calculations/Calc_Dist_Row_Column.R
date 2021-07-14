@@ -2,7 +2,7 @@
 #rm(list=ls())
 library(here)
 library(tidyverse)
-alt_data <- read_csv(here("data", "cleaned_ha_data_2021-07-01.csv"),
+alt_data <- read_csv(here("data", "ha_clean.csv"),
                      col_types = cols(plot = col_character(),
                                       bdffp_reserve_no = col_character()))
 
@@ -171,3 +171,4 @@ ggplot(full_test, aes(x = x, y = y, color = dist_N, size = dist_E)) +
 # Check that plot orientations are correct
 
 write_rds(full_test,here("data", "10m_resolution_1ha_dists.rds"))
+

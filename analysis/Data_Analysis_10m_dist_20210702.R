@@ -8,7 +8,8 @@ library(MASS)
 library(car)
 library(sn)
 dist_data <-read_rds(here("data","rough_dist_data_10m.rds"))
-dataCF <- read_csv(here("data","cleaned_ha_data_2021-07-01.csv"))
+dataCF <- read_csv(here("data","ha_clean.csv"),
+                   col_types = cols(plot = col_character()))
 # Survival model, intercept only --------------------------------------------
 
 surv.null.fit <- glm(surv~1,data=dist_data,family=binomial)
