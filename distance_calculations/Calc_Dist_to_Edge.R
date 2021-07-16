@@ -226,11 +226,11 @@ xy_dist <-
     Colosso_1ha 
   )
 
-full <- right_join(data %>% select(-x, -y), #get rid of old, incorrect coords which don't join up.
-                   xy_dist)
+full <- right_join(data %>% dplyr::select(-x,-y), xy_dist)
 range(full$distance_to_nearest_edge)
 nrow(full)
 
+write_rds(full,here("data","full_1ha_location_data.rds"))
 # data validation ---------------------------------------------------------
 # A place for tests and plots of the data to double check that you are getting sensible data.
 # plot data:
