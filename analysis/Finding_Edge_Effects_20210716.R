@@ -38,7 +38,7 @@ abline(0,1)
 summary(surv.mod)
 car::Anova(surv.mod) # dist_near not a significant predictor
 check_model(surv.mod)
-
+piecewiseSEM::rsquared(surv.mod)
 
 # Flowering probability using 10m distances --------------------------
 
@@ -47,6 +47,7 @@ flwr.mod <- glmer(flwr~size_prev+flwr_prev+dist_near+bdffp_reserve_no+(1|year),
 summary(flwr.mod)
 car::Anova(flwr.mod) # dist_near is not a significant predictor
 check_model(flwr.mod)
+piecewiseSEM::rsquared(flwr.mod)
 
 # Log_Size as a function of distance using linear regression --------------
 
@@ -80,19 +81,21 @@ surv.fine <- glmer(surv~size_prev+distance_to_nearest_edge+bdffp_reserve_no+(1|y
 summary(surv.fine)
 car::Anova(surv.fine) # distance_to_nearest_edge is a significant predictor
 check_model(surv.fine)
+piecewiseSEM::rsquared(surv.fine)
 
 surv.fine2 <- glm(surv~size_prev+distance_to_nearest_edge+bdffp_reserve_no,
                   data=dist_fine,family=binomial)
 summary(surv.fine2)
-car::Anova(surv.fine2)
-# Logistic regression of flowering using fine distance predictor
+car::Anova(surv.fine2) # dist_near still significant 
+
+# Logistic regression of flowering using fine distance predictor---------------
 
 flwr.fine <- glmer(flwr~size_prev+flwr_prev+distance_to_nearest_edge+bdffp_reserve_no+
                      (1|year),data=dist_fine,family=binomial)
 summary(flwr.fine)
 car::Anova(flwr.fine) # distance_to_nearest_edge not significant predictor
 check_model(flwr.fine)
-
+piecewiseSEM::rsquared(flwr.fine)
 # Linear relationship between log_size and distance using fine distance predictor ---
 
 size.fine <- lm(log_size~log_size_prev+distance_to_nearest_edge+bdffp_reserve_no+year,
@@ -101,8 +104,7 @@ summary(size.fine)
 
 size.fine2 <- lmer(log_size~log_size_prev+distance_to_nearest_edge+bdffp_reserve_no+(1|year),
                    data=dist_fine)
-rsquared(size.fine2) 
-car::Anova(size.fine)
+piecewiseSEM::rsquared(size.fine2) 
 car::Anova(size.fine2)
 check_model(size.fine2)
 
@@ -152,7 +154,7 @@ ggplot(data=surv.fine2.df,aes(x=distance_to_nearest_edge))+
   geom_hline(aes(yintercept=base.surv),color="red")+
   geom_ribbon(aes(ymin=base.surv-1.405*CF.surv.df$.se.fit[1],ymax=base.surv+1.405*CF.surv.df$.se.fit[1]),fill="red",
               alpha=0.5)
-
+  
 
 # Results ---------------------------------------------------------------------
 
