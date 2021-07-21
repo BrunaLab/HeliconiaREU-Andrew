@@ -85,6 +85,7 @@ piecewiseSEM::rsquared(surv.fine)
 
 surv.fine2 <- glm(surv~size_prev+distance_to_nearest_edge+bdffp_reserve_no,
                   data=dist_fine,family=binomial)
+
 summary(surv.fine2)
 car::Anova(surv.fine2) # dist_near still significant 
 
@@ -149,6 +150,17 @@ surv.fine2.df <- broom::augment(surv.fine2,
                                 se_fit=TRUE,
                                 type.predict="response")
 
+## Eric's notes ##
+newdata = data.frame(size_prev = mean(dist_fine$size_prev, na.rm = TRUE),
+                     distance_to_nearest_edge = seq(0, 50, by = 1),
+                     bdffp_reserve_no = unique(dist_fine$bdffp_reserve_no))
+
+broom::augment(surv.fine2, type.predict = "response", newdata = newdata) %>%
+  ggplot(aes(x = distance_to_nearest_edge, color = bdffp_reserve_no, y = .fitted)) + 
+  geom_line()
+##########
+
+ 
 ggplot(data=surv.fine2.df,aes(x=distance_to_nearest_edge))+
   geom_line(aes(y=.fitted))+
   geom_hline(aes(yintercept=base.surv),color="red")+
