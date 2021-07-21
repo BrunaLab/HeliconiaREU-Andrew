@@ -24,9 +24,21 @@ dist_10m$bdffp_reserve_no <- as.factor(dist_10m$bdffp_reserve_no)
 
 surv.mod <- glmer(surv~size_prev+dist_near+bdffp_reserve_no+(1|year),
                   data=dist_10m,family=binomial)
+
+surv.mod2 <- glm(surv~size_prev+dist_near+bdffp_reserve_no,data=dist_10m,family=binomial)
+
+z <- resid(surv.mod2,type="working")+surv.mod2$linear.predictors
+
+plot(z~surv.mod2$linear.predictors)
+abline(0,1)
+# This is a form of model diagnostics to be sure the link function used is appropriate.
+
+
+
 summary(surv.mod)
 car::Anova(surv.mod) # dist_near not a significant predictor
 check_model(surv.mod)
+
 
 # Flowering probability using 10m distances --------------------------
 
@@ -36,12 +48,6 @@ summary(flwr.mod)
 car::Anova(flwr.mod) # dist_near is not a significant predictor
 check_model(flwr.mod)
 
-flwr.mod2 <- glmer(flwr~log_size_prev*dist_near + flwr_prev+bdffp_reserve_no+(1|year),
-                   data=dist_10m,family=binomial)
-summary(flwr.mod2)
-car::Anova(flwr.mod2) # interaction term is significant, p < 0.01
-# does that need to be penalized?
-check_model(flwr.mod2)
 # Log_Size as a function of distance using linear regression --------------
 
 size.mod <- lmer(log_size~log_size_prev+dist_near+bdffp_reserve_no+(1|year),
