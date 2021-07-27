@@ -1,0 +1,463 @@
+---
+title: "Results"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+library(here)
+library(tidyverse)
+library(car)
+library(lme4)
+library(piecewiseSEM)
+library(broom)
+library(performance)
+library(broom.mixed)
+library(sjPlot)
+library(Hmisc)
+library(see)
+dist_10m <- read_rds(here("data","10m_resolution_1ha_dists.rds"))
+dist_fine <- read_rds(here("data","full_1ha_location_data.rds"))
+CF_data <- read_csv(here("data","ha_clean.csv"))
+
+CF_data <- CF_data %>% 
+  filter(habitat == "CF")
+
+```
+
+## Background Information
+Due to widespread anthropogenic activities, landscapes worldwide have become more fragmented and spatially complex. Habitat fragmentation imposes a new dynamic onto landscapes, splitting them into ecologically distinct patches separated by edges or boundaries. Investigating the nuances of patch-boundary interactions like edge effects is a paramount objective of ecologists; edge effects influence distribution patterns of resources, species, and they can alter the magnitude and direction of ecological flows, which can have massive implications for an ecosystem's functionality(Ries et al. 2004). For example, Harrison and Banks-Leite found that trophic cascades that regulate herbivorous arthopod populations in the interior of Brazilian forests were not present near edges, which could impact nutrient cycling and floristic community composition due to elevated plant damage(2020).Additionally, edge effects have been shown to impact species distribution and species interactions like seed dispersal and predation (Batary et al. 2009; Parker et al. 2021; Piper and Catterall 2004). Quantifying edge effects permits ecologists to better understand how fragmented landscapes will affect different species, while providing conservationists with well-informed models to predict species-specific and community-level responses to ongoing fragmentation. For example, as a landscape becomes progressively fragmented, average patch size typically decreases, which means edge effects penetrate further into these patches. If an edge effects' depth of influence increases, then the area unaffected by edge effects or "core area" will diminish or be eliminated if the patch is too small (). Patches below a critical size threshold may be unable to support edge-sensitive species, causing a loss in community biodiversity (). Additionally, some species exhibit edge avoidance or can be adversely affected by environmental stressors induced by edge-associated microclimates, which is a potential explanation for temporal and spatial shifts in species distributions, and the course, emergent patterns unique to fragmented landscapes (Michel et al. 2016).
+
+The magnitude and depth of influence of edge effects are dictated largely by edge permeability and edge contrast with adjoining patches (Cadenosso et al. 2003). Less understood is how edge effects are impacted by the interaction of nearby edges. Edge interactions show promise in explaining landscape-level variations in species distributions due to regional changes in spatial complexity (e.g., number of interacting edges)(Fletcher 2005).
+
+Using data obtained on populations of *Heliconia acuminata* located within the experimentally fragmented rainforest of the BDFFP, we will attempt to quantify the depth and magnitude of the edge effects for 1-ha fragments using vocabulary consistent with the conceptual framework outlined by Porensky and Young (2013). This population data provides us with a unique opportunity to determine the demographic consequences of a population that is subjected to edge interaction. Specifically, if there are edge effects, then the annual growth rates of *H. acuminata*, abundance of *H. acuminata*, and survivorship of *H. acuminata* will be significantly lower in areas of fragments where a strengthening edge effect is observed because of edge interaction. Another question to answer would be if plants experiencing edge effects demonstrate greater year-to-year variance in their measured response variables. Quantifying variance on important demographic parameters could be relevant to smaller populations, as increased variance in vital rates of a small population can dramatically increase extinction risk.
+
+
+## Question asked 
+
+Are there edge-dependent effects impacting survival, flowering, and size of 
+*H. acuminata* within 1-ha forest fragments in the BDFFP?
+
+Can depth of influence (DOI) of any observed edge effects be determined?
+
+Is year-to-year variation in vital rates significant?
+
+
+
+## General Methods 
+
+I used generalized linear mixed models (GLMMs) to perform logistic regression on
+the categorical, binary variables of survival and flowering respectively. I also used 
+a linear mixed model to perform regression on the continuous variable log_size.
+Models were created using the R package lme4. Models were fit using a step-wise 
+elimination procedure where significance of random effects and fixed effects was 
+determined through a series of likelihood-ratio tests. Signficance of interaction
+terms was determined using R package car to perform a Type II Wald Chi-squared test.
+84% Confidence intervals were fit around predicted model outputs and compared against
+baseline values from continuous forest habitat to identify an edge effect's DOI.
+
+## Preliminary Results
+
+I. Is there a edge effect on survival in *H. acuminata*? 
+
+I looked at distance as a
+predictor for survival using the center point of the 10mx10m sub plots. I started by 
+first determining if year was a significant random effect for survival by using the 
+likelihood ratio test. I found that year was not a significant random effect and 
+distance to nearest edge was also not a significant predictor of survival.
+
+```{r echo=FALSE}
+dist_10m_surv <- dist_10m %>%
+  filter(!is.na(size_prev) & !is.na(surv)) 
+
+dist_10m$year <- as.factor(dist_10m$year)
+dist_10m$bdffp_reserve_no <- as.factor(dist_10m$bdffp_reserve_no)
+dist_10m$surv <- as.factor(dist_10m$surv)
+dist_10m$flwr <- as.factor(dist_10m$flwr)
+dist_10m$flwr_prev <- as.factor(dist_10m$flwr_prev)
+
+
+surv.m1 <- glmer(surv~log_size_prev+dist_near+bdffp_reserve_no+(1|year),
+                  data=dist_10m,family=binomial)
+
+surv.m2 <- glm(surv~log_size_prev+dist_near+bdffp_reserve_no,data=dist_10m,family=binomial)
+
+anova(surv.m1,surv.m2, test="LRT")
+
+surv.m3 <- glm(surv~log_size_prev+bdffp_reserve_no,data=dist_10m,family=binomial)
+
+anova(surv.m3,surv.m2, test="LRT")
+
+r2(surv.m3)
+check_model(surv.m3)
+tab_model(surv.m3)
+```
+
+I repeated this analysis using a separate data frame containing distances to edge that
+were accurate to roughly 0.1m. At a finer scale, distance was a significant predictor 
+for survival (p = 0.007) and year was found to be a significant random effect using Likelihood ratio tests to compare a mixed effect model to a generalized linear model with fixed covariates fit through a single intercept. In terms of determining predictive power of the selected model, I used the Hmisc package and rcorr.cens function to calculate Somer's Dxy and C-value associated with the area under the receiver operating characteristic (ROC) curve area. Values obtained were above 0.8, which indicates real predictive power from the selected model.
+
+```{r echo=FALSE}
+dist_fine$year <- as.factor(dist_fine$year)
+dist_fine$bdffp_reserve_no <- as.factor(dist_fine$bdffp_reserve_no)
+dist_fine$flwr <- as.factor(dist_fine$flwr)
+dist_fine$flwr_prev <- as.factor(dist_fine$flwr_prev)
+dist_fine$surv <- as.factor(dist_fine$surv)
+
+dist_fine_rev <- dist_fine %>% filter(!is.na(log_size_prev))
+
+
+surv.fine.m1 <- glmer(surv~log_size_prev+distance_to_nearest_edge+bdffp_reserve_no+(1|year),
+                   data=dist_fine,family=binomial)
+
+
+surv.fine.m2 <- glm(surv~log_size_prev+distance_to_nearest_edge+bdffp_reserve_no,
+                  data=dist_fine,family=binomial)
+
+anova(surv.fine.m1,surv.fine.m2)
+
+surv.fine.m3 <- glmer(surv~log_size_prev+bdffp_reserve_no+(1|year),
+                      data=dist_fine,family=binomial)
+
+anova(surv.fine.m1,surv.fine.m3,test="LRT")
+
+
+
+# test possible combinations of interactions 
+
+surv.fine.m4 <- glmer(surv~log_size_prev*bdffp_reserve_no*distance_to_nearest_edge+(1|year),
+                      data=dist_fine,family=binomial)
+anova(surv.fine.m4,surv.fine.m1, test="LRT")
+
+plot_model(surv.fine.m1,type="pred",terms=c("log_size_prev[all]","bdffp_reserve_no"))
+tab_model(surv.fine.m1)
+performance::check_model(surv.fine.m1)
+check_outliers(surv.fine.m1)
+
+
+probs1 <- binomial()$linkinv(fitted(surv.fine.m1))
+
+Hmisc::rcorr.cens(probs1, as.numeric(dist_fine_rev$surv))
+
+```
+
+Since I detected an edge effect for survival, what is its depth of influence (DOI)?
+
+The figure below shows that for the average sized *H. acuminata*, plots 2107 and 3114 survival rates were much higher than CF habitat, while plot 1104 had comparable survival probabilities with CF 9m away from the nearest edge, thereafter the plot outperformed CF survival probability. Overall, DOI was impossible to determine due to immediate overlap in probabilities between the two habitat types. I'm curious why CF has a lower calculated survival probability compared to these fragments. One explanation may be that CF have more old plants on average than forest fragment plots, which could explain the discrepancy in the predicted vital rates. Either that or the functional form of the model is overestimating survival in forest fragments.
+
+```{r echo=FALSE}
+CF.surv <- glm(surv~1,data=CF_data,family=binomial)
+CF.CI <-confint(CF.surv, level=0.84)
+CF.CI.bt <- plogis(CF.CI)
+
+CF.surv.df <- broom::augment(CF.surv,
+                               se_fit=TRUE,
+                               type.predict="response")
+
+base.surv <- CF.surv.df$.fitted[1]
+# Eric's contribution helping me smooth out the curves.. 
+
+newdata = data.frame(log_size_prev = mean(dist_fine$log_size_prev, na.rm = TRUE),
+                     distance_to_nearest_edge = seq(0, 50, by = 0.1),
+                     bdffp_reserve_no = unique(dist_fine$bdffp_reserve_no))
+
+nwdat.df <-broom::augment(surv.fine.m2, type.predict = "response", newdata = newdata,
+                          se_fit=TRUE)
+  ggplot(data=nwdat.df,aes(x = distance_to_nearest_edge)) + 
+  geom_line(aes(y=.fitted,color=bdffp_reserve_no))+
+  geom_ribbon(aes(ymin=.fitted-1.405*.se.fit,ymax=.fitted+1.405*.se.fit),fill="black",alpha=0.5)+
+geom_hline(aes(yintercept=base.surv,color="CF"))+
+  geom_ribbon(aes(ymin=base.surv-1.405*CF.surv.df$.se.fit[1],ymax=base.surv+1.405*CF.surv.df$.se.fit[1]),
+              fill="red",alpha=0.6)+
+    labs(title="Comparison of survival probability for average sized plants in FF and CF",
+         x="Distance to nearest edge", y="Predicted survival")
+```
+
+
+I'm particularly curious about the aforementioned plots 2107 and 3114, which show remarkably high survival probabilities, yet my data visualization of the population decline in forest fragments over the years seems to contradict these predicted survival probabilities. Below are two figures showing total population  and population broken down by bdffp_reserve_no temporal trajectories.
+
+```{r echo=FALSE}
+pop_num <- dist_10m %>%
+  dplyr::group_by(year) %>%
+  dplyr::summarize(n=n())
+
+
+ggplot(data=pop_num,aes(x=year))+
+  geom_point(aes(y=n))+
+  labs(title="Population of H. acuminata in 1-ha FF from 1998-2009",
+       x="Year",y="Population")
+
+
+
+```
+
+```{r echo=FALSE}
+pop_num2 <- dist_10m %>%
+  dplyr::group_by(bdffp_reserve_no,year) %>%
+  dplyr::summarize(n=n())
+
+ggplot(data=pop_num2)+
+  geom_point(aes(x=year,y=n,color=bdffp_reserve_no))+
+  labs(title="Population of each individual FF from 1998-2009",
+       x="Year",y="Population")
+```
+
+Since plants regress in size prior to dying, the  interesting values to analyze here are not survival probabilities of average sized plants, but rather the survival probabilities of smaller plants, which largely constitute the decline observed in the population growth figures. Survival probabilities changed most noticeably in plot 3114, suggesting that this plot is particularly sensitive to perturbation of log_size_prev variable. Plot 3114 and CF survival probabilities were indistinguishable 20m away from the nearest edge, after which the forest fragment survival probabilities were higher than CF.
+
+```{r echo=FALSE}
+quantile(dist_fine$log_size_prev,na.rm=TRUE)
+
+newdata2 <- data.frame((log_size_prev =quantile(dist_fine$log_size_prev,na.rm=TRUE)[2]),
+                       distance_to_nearest_edge=seq(0,50,by=0.1),
+                       bdffp_reserve_no = unique(dist_fine$bdffp_reserve_no))
+
+colnames(newdata2)[1] <- "log_size_prev"
+
+nwdat2.df <-broom::augment(surv.fine.m2, type.predict = "response", newdata = newdata2,
+                          se_fit=TRUE)
+
+CF.nwdat <- data.frame(log_size_prev=quantile(CF_data$log_size_prev,na.rm=TRUE)[2])
+
+CF.nwdat.surv <- broom::augment(CF.surv,newdata=CF.nwdat,
+                                se_fit=TRUE,
+                                type.predict="response")
+
+
+
+  ggplot(data=nwdat2.df,aes(x = distance_to_nearest_edge)) + 
+  geom_line(aes(y=.fitted,color=bdffp_reserve_no))+
+  geom_ribbon(aes(ymin=.fitted-1.405*.se.fit,ymax=.fitted+1.405*.se.fit),fill="black",alpha=0.5)+
+geom_hline(aes(yintercept=CF.nwdat.surv$.fitted,color="CF"))+
+  geom_ribbon(aes(ymin=CF.nwdat.surv$.fitted-1.405*CF.nwdat.surv$.se.fit,
+                  ymax=CF.nwdat.surv$.fitted+1.405*CF.nwdat.surv$.se.fit),
+              fill="red",alpha=0.5)+
+    labs(title="Comparison of survival probabilities of lower quantile plants in FF and CF",
+         x= "Distance to nearest edge", y="Predicted survival")
+```
+
+Comparison of quantiles in log_size_prev in two habitat types: (1) FF (2) CF
+Found FF had larger sized plants as threshold value for 25% quantile, may explain why their survival probabilities were higher than expected. 
+
+```{r echo=FALSE}
+quantile(dist_fine$log_size_prev,na.rm=TRUE)
+quantile(CF_data$log_size_prev,na.rm=TRUE)
+```
+
+II. Is there an edge effect on flowering probability in *H. acuminata*?
+
+I found that year is a relevant random effect, though df comparison may be questionable, as there is debate
+on how random effects should contribute to degrees of freedom, also based on hierarchy of experimental design. There was a significant interaction term log_size_prev*bdffp_reserve_no and 
+distance_near was not a significant predictor of flowering for 10m data set. Model diagnostics show major collinearity 
+issues for the best fit model including the interaction term, which may make assessing the value of individual predictors very difficult, so the second best model was selected.
+
+```{r echo=FALSE}
+flwr.m1 <- glmer(flwr~log_size_prev+flwr_prev+dist_near+bdffp_reserve_no+(1|year),
+                  data=dist_10m,family=binomial)
+
+flwr.m2 <- glm(flwr~log_size_prev+dist_near+bdffp_reserve_no,
+               data=dist_10m,family=binomial)
+
+anova(flwr.m1,flwr.m2, test="LRT")
+
+
+# interaction terms are significant time to figure them out 
+
+flwr.m3 <- glmer(flwr~log_size_prev*dist_near*bdffp_reserve_no+flwr_prev+(1|year),
+                 data=dist_10m,family=binomial)
+
+anova(flwr.m1,flwr.m3,test="LRT")
+car::Anova(flwr.m3)
+
+flwr.m4 <- glmer(flwr~log_size_prev*bdffp_reserve_no+dist_near+flwr_prev+(1|year),
+                 data=dist_10m,family=binomial)
+flwr.m5 <- glmer(flwr~log_size_prev*bdffp_reserve_no+flwr_prev+(1|year),
+                 data=dist_10m,family=binomial)
+flwr.m6 <- glmer(flwr~log_size_prev*bdffp_reserve_no+(1|year),data=dist_10m,
+                 family=binomial)
+
+flwr.m7 <- glmer(flwr~log_size_prev+bdffp_reserve_no+flwr_prev+(1|year),data=dist_10m,
+                 family=binomial)
+
+
+
+anova(flwr.m4,flwr.m3,test="LRT")
+anova(flwr.m5,flwr.m4,test="LRT")
+anova(flwr.m6,flwr.m5,test="LRT")
+anova(flwr.m7,flwr.m5,test="LRT")
+
+
+check_model(flwr.m7)
+tab_model(flwr.m7)
+check_outliers(flwr.m7)
+
+
+```
+
+Now to repeat this analysis using finer distances. We found that year was a significant random effect and distance to nearest edge was also a significant predictor(χ2 = 4.1382, df=1, p= 0.041) for flowering probability. Due to there being outliers present and the p value being close to the cutoff, this outcome may be questionable, especially since the upper confidence interval boundary for this predictor is an odds ratio of 1.  Calculated Somer's Dxy and C-values obtained indicate real predictive power from the selected model. 
+
+```{r echo=FALSE}
+dist_fine_rev <- dist_fine %>%
+  filter(!is.na(log_size_prev) & !is.na(flwr_prev)) %>%
+  filter(!is.na(flwr))
+
+flwr.fine.m1 <- glmer(flwr~log_size_prev+flwr_prev+distance_to_nearest_edge+bdffp_reserve_no+(1|year),
+                  data=dist_fine,family=binomial)
+
+flwr.fine.m2 <- glm(flwr~log_size_prev+flwr_prev+distance_to_nearest_edge+bdffp_reserve_no,
+                    data=dist_fine,family=binomial)
+
+flwr.fine.m3 <- glmer(flwr~log_size_prev+flwr_prev+bdffp_reserve_no+(1|year),
+                      data=dist_fine,family=binomial)
+
+flwr.fine.m4 <- glmer(flwr~log_size_prev+flwr_prev+distance_to_nearest_edge+(1|year),
+                      data=dist_fine,family=binomial)
+
+flwr.fine.m5 <- glmer(flwr~log_size_prev+distance_to_nearest_edge+bdffp_reserve_no+(1|year),
+                      data=dist_fine,family=binomial)
+dist_fine_rev <- dist_fine %>%
+  filter(!is.na(log_size_prev) & !is.na(flwr_prev)) %>%
+  filter(!is.na(flwr))
+
+#final model is first model 
+anova(flwr.fine.m1,flwr.fine.m2,test="LRT")
+anova(flwr.fine.m3,flwr.fine.m1,test="LRT")
+anova(flwr.fine.m4,flwr.fine.m1,test="LRT")
+anova(flwr.fine.m5,flwr.fine.m1,test="LRT")
+
+
+summary(flwr.fine.m1)
+check_outliers(flwr.fine.m1)
+performance::check_model(flwr.fine.m1)
+sjPlot::tab_model(flwr.fine.m1)
+sjPlot::plot_model(flwr.fine.m1,type="pred",terms=c("log_size_prev[all]","bdffp_reserve_no"))
+sjPlot::plot_model(flwr.fine.m1,type="pred",terms=c("distance_to_nearest_edge[all]","bdffp_reserve_no"))
+sjPlot::plot_model(flwr.fine.m1,type="est")
+
+
+probs2 <- binomial()$linkinv(fitted(flwr.fine.m1))
+dist_fine_rev$flwr <- as.numeric(dist_fine_rev$flwr)
+Hmisc::rcorr.cens(probs2, as.numeric(dist_fine_rev$flwr))
+```
+
+What is the DOI of the effect?
+
+Taking into account the 84% CIs around the predicted estimates, a depth of influence was impossible to determine, as there was immediate overlap in the probabilities. 
+
+```{r echo=FALSE}
+flwr.fine.DOI <- glm(flwr~log_size_prev+flwr_prev+distance_to_nearest_edge+bdffp_reserve_no,
+                  data=dist_fine,family=binomial)
+summary(flwr.fine.DOI)
+
+CF.flwr<- glm(flwr~1, data=CF_data,family=binomial)
+CF.flwr.nwdat <- data.frame(log_size_prev = quantile(CF_data$log_size_prev,na.rm=TRUE)[4])
+colnames(CF.flwr.nwdat)[1] <- "log_size_prev"
+CF.flwr.df <- broom::augment(CF.flwr,se_fit=TRUE,newdata=CF.flwr.nwdat,type.predict="response")
+
+
+flwr.factor <-data.frame(flwr_prev=rep(c(0,1),251))
+flwr.factor <- as.factor(flwr.factor[-502,])
+
+newdata.flwr <- data.frame(log_size_prev = quantile(dist_fine_rev$log_size_prev)[4],
+                           distance_to_nearest_edge = seq(0,50,by=0.1),
+                           bdffp_reserve_no = unique(dist_fine_rev$bdffp_reserve_no),
+                           flwr_prev = flwr.factor)
+
+pred.flwr <- broom::augment(flwr.fine.DOI,newdata=newdata.flwr,se_fit=TRUE,type.predict="response")
+
+ggplot(data=pred.flwr,aes(x = distance_to_nearest_edge)) + 
+  geom_line(aes(y=.fitted,color=bdffp_reserve_no))+
+  geom_ribbon(aes(ymin=.fitted-1.405*.se.fit,ymax=.fitted+1.405*.se.fit),fill="black",alpha=0.5)+
+geom_hline(aes(yintercept=CF.flwr.df$.fitted,color="CF"))+
+  geom_ribbon(aes(ymin=CF.flwr.df$.fitted-1.405*CF.flwr.df$.se.fit,
+                  ymax=CF.flwr.df$.fitted+1.405*CF.flwr.df$.se.fit),
+              fill="red",alpha=0.5)+
+  labs(title="Comparison of flowering probability for upper quantile sized plants in FF and CF",
+       x = "Distance to nearest edge", y= "Predicted probability of flowering")
+```
+
+III. Is there an edge effect on log_size of *H. acuminata*?
+
+I found that distance to nearest edge was not a significant predictor for log_size of plants using distances at 10m intervals.
+Year was an important random effect that improved model fit.(see conditional versus marginal R2 below). When model fitting, a significant interaction term was found log_size_prev*bdffp_reserve_no, but this introduced large collinearity issues, so the second best-fit model was selected. 
+
+```{r echo=TRUE}
+log_size.m1 <- lmer(log_size~log_size_prev*bdffp_reserve_no*dist_near+(1|year),
+                    data=dist_10m)
+
+log_size.m2 <- lm(log_size~log_size_prev*bdffp_reserve_no*dist_near,data=dist_10m)
+
+anova(log_size.m1,log_size.m2,test="LRT")
+
+
+car::Anova(log_size.m1)
+
+
+log_size.m3 <- lmer(log_size~log_size_prev*bdffp_reserve_no+(1|year),data=dist_10m)
+anova(log_size.m1,log_size.m3,test="LRT")
+
+performance::check_model(log_size.m3) # high collinearity 
+
+log_size.m4 <- lmer(log_size~log_size_prev+bdffp_reserve_no+(1|year),data=dist_10m)
+
+anova(log_size.m3,log_size.m4,test="LRT")
+
+check_outliers(log_size.m4)
+performance::check_model(log_size.m4)
+tab_model(log_size.m4)
+```
+
+Repeating this analysis for finer distances, I still found that distance to nearest edge was not a significant predictor variable for log_size of *H. acuminata*, while year remained a significant random effect. 
+
+```{r echo=FALSE}
+dist_fine_rev <- dist_fine %>%
+  filter(!is.na(log_size_prev)&!is.na(log_size))
+
+
+log_size_fine.m1 <- lmer(log_size~log_size_prev*bdffp_reserve_no*distance_to_nearest_edge+(1|year),
+                         data=dist_fine)
+
+log_size_fine.m2 <- lm(log_size~log_size_prev*bdffp_reserve_no*distance_to_nearest_edge,data=dist_fine)
+
+anova(log_size_fine.m1,log_size_fine.m2,test="LRT")
+
+car::Anova(log_size_fine.m1)
+
+log_size_fine.m3 <- lmer(log_size~log_size_prev+bdffp_reserve_no+distance_to_nearest_edge+(1|year),data=dist_fine)
+
+anova(log_size_fine.m1,log_size_fine.m3,test="LRT")
+
+log_size_fine.m4 <- lmer(log_size~log_size_prev+bdffp_reserve_no+(1|year),data=dist_fine)
+summary(log_size_fine.m4)
+anova(log_size_fine.m3,log_size_fine.m4,test="LRT")
+
+
+log_size_fine.m5 <- lmer(log_size~log_size_prev+(1|year),data=dist_fine)
+
+anova(log_size_fine.m4,log_size_fine.m5,test="LRT")
+
+check_outliers(log_size_fine.m4)
+performance::check_model(log_size_fine.m4)
+tab_model(log_size_fine.m4)
+
+dist_fine_rev$predicted <-predict(log_size.m4,dist_fine_rev)
+
+ggplot(data=dist_fine_rev)+
+         facet_wrap(~year)+
+         geom_point(aes(x=log_size_prev,y=log_size))+
+         geom_smooth(aes(x=log_size_prev,y=predicted),se=T,method="lm",color="green")
+
+ggplot(data=dist_fine_rev)+
+  facet_wrap(~year)+
+  geom_point(aes(x=distance_to_nearest_edge,y=log_size))+
+  geom_smooth(aes(x=distance_to_nearest_edge,y=predicted),se=T,method="lm",color="red")
+
+
+```
+
+
